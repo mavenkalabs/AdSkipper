@@ -17,6 +17,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:text="@string/a11y_service_enabled_message"
             android:textAlignment="center"
             app:layout_constraintTop_toTopOf="parent"
@@ -25,6 +26,7 @@
 
         <Button
             android:id="@+id/button_second"
+            style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/go_to_a11y_settings"
