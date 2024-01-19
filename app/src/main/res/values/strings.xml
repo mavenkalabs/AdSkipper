@@ -3,7 +3,6 @@
     <string name="title_activity_main">Ad Skipper</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
-    <string name="second_fragment_label">Second Fragment</string>
 
     <string name="a11y_service_disabled_message">Ad Skipper needs to be enabled in Accessibility Settings before use.</string>
     <string name="a11y_service_enabled_message">Ad Skipper is ready for use. You can disable it in Accessibility Settings.</string>

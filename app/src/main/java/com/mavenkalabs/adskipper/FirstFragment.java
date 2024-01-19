@@ -10,11 +10,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityManager;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 
 import com.mavenkalabs.adskipper.databinding.FragmentFirstBinding;
 import com.mavenkalabs.adskipper.service.AdSkipperService;
@@ -38,10 +37,13 @@ public class FirstFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        if (isA11yServiceEnabled()) {
-            final NavController navController = Navigation.findNavController(binding.getRoot());
-            navController.popBackStack();
-            navController.navigate(R.id.SecondFragment);
+        TextView textView = binding.getRoot().findViewById(R.id.textview_first);
+        if (textView != null) {
+            if (isA11yServiceEnabled()) {
+                textView.setText(R.string.a11y_service_enabled_message);
+            } else {
+                textView.setText(R.string.a11y_service_disabled_message);
+            }
         }
     }
 
@@ -52,7 +54,6 @@ public class FirstFragment extends Fragment {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);
         });
-
     }
 
     @Override
