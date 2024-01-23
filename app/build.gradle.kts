@@ -42,6 +42,7 @@ dependencies {
     implementation("androidx.navigation:navigation-fragment:2.7.6")
     implementation("androidx.navigation:navigation-ui:2.7.6")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.9.0")
 
     // Core library
     androidTestImplementation("androidx.test:core:1.5.0")
