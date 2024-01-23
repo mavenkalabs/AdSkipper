@@ -1,15 +1,11 @@
 package com.mavenkalabs.adskipper;
 
-import android.accessibilityservice.AccessibilityServiceInfo;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ServiceInfo;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.accessibility.AccessibilityManager;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,6 +13,8 @@ import androidx.fragment.app.Fragment;
 
 import com.mavenkalabs.adskipper.databinding.FragmentFirstBinding;
 import com.mavenkalabs.adskipper.service.AdSkipperService;
+
+import java.util.Arrays;
 
 public class FirstFragment extends Fragment {
 
@@ -63,17 +61,21 @@ public class FirstFragment extends Fragment {
     }
 
     private boolean isA11yServiceEnabled() {
-        AccessibilityManager a11yManager = (AccessibilityManager)requireContext()
-                .getSystemService(Context.ACCESSIBILITY_SERVICE);
-        if (a11yManager == null) {
+        final String service = requireContext().getPackageName() + "/" + AdSkipperService.class.getCanonicalName();
+        try {
+            int accessibilityEnabled = Settings.Secure.getInt(requireContext().getApplicationContext().getContentResolver(),
+                    Settings.Secure.ACCESSIBILITY_ENABLED);
+            if (accessibilityEnabled == 1) {
+                String settingValue = Settings.Secure.getString(requireContext().getApplicationContext().getContentResolver(),
+                        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                if (settingValue != null) {
+                    return Arrays.stream(settingValue.split(":")).anyMatch(s-> s.equalsIgnoreCase(service));
+                }
+            }
+
             return false;
-        } else {
-            return a11yManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC)
-                    .stream().anyMatch(info -> {
-                        ServiceInfo serviceInfo = info.getResolveInfo().serviceInfo;
-                        return serviceInfo.packageName.equals(requireContext().getPackageName()) &&
-                                serviceInfo.name.equals(AdSkipperService.class.getName());
-                    });
+        } catch (Settings.SettingNotFoundException e) {
+            return false;
         }
     }
 }
