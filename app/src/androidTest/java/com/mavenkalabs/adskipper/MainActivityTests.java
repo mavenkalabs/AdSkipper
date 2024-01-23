@@ -1,7 +1,5 @@
 package com.mavenkalabs.adskipper;
 
-import android.accessibilityservice.AccessibilityService;
-import android.app.UiAutomation;
 import android.content.Intent;
 import android.provider.Settings;
 import android.widget.Switch;
@@ -141,11 +139,9 @@ public class MainActivityTests {
                 assertFalse(Objects.requireNonNull(toggleButton).isChecked());
             }
         }
-        getInstrumentation().getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
-        uiDevice.waitForWindowUpdate(Objects.requireNonNull(MainActivity.class.getPackage()).getName(), TIMEOUT);
-        getInstrumentation().getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
-                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
+        uiDevice.pressBack();
+        uiDevice.waitForWindowUpdate(null, TIMEOUT);
+        uiDevice.pressBack();
         uiDevice.waitForWindowUpdate(Objects.requireNonNull(MainActivity.class.getPackage()).getName(), TIMEOUT);
     }
 }
