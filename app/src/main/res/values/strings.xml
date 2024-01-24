@@ -4,7 +4,7 @@
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
 
-    <string name="a11y_service_disabled_message">Ad Skipper needs to be enabled in Accessibility Settings before use.</string>
+    <string name="a11y_service_disabled_message">Ad Skipper is an app that automates clicking Skip Ads button that appears in Youtube videos.\n\nIt uses Accessibility features to scan the window content as you are viewing the video, detect the appearance of the Skip Ads button and then perform a click action on the Skip Ads button on your behalf.\n\nAd Skipper does not use or share any of your personal information and nor does it track your Youtube usage.\n \n If you consent, you must go to Accessibility Settings and enable the Ad Skipper service there.</string>
     <string name="a11y_service_enabled_message">Ad Skipper is ready for use. You can disable it in Accessibility Settings.</string>
     <string name="go_to_a11y_settings">Go to Accessibility Settings</string>
 
