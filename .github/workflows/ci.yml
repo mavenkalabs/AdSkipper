@@ -33,7 +33,7 @@ jobs:
         run: ./gradlew lintDebug
 
       - name: Upload html test report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: lint.html
           path: app/build/reports/lint-results-debug.html
@@ -42,7 +42,7 @@ jobs:
         run: ./gradlew test
 
       - name: Upload test report
-        uses: actions.upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: unit_test_report
           path: app/build/reports/test/testDebugUnitTest/
@@ -51,7 +51,7 @@ jobs:
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
           path: app/build/outputs/apk/debug/app-debug.apk
