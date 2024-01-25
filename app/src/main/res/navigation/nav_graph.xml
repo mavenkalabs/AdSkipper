@@ -2,12 +2,23 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    app:startDestination="@id/FirstFragment">
-
+    app:startDestination="@id/ServiceDisabledFragment">
     <fragment
-        android:id="@+id/FirstFragment"
-        android:name="com.mavenkalabs.adskipper.FirstFragment"
-        android:label="@string/first_fragment_label"
-        tools:layout="@layout/fragment_first">
+        android:id="@+id/ServiceDisabledFragment"
+        android:name="com.mavenkalabs.adskipper.ServiceDisabledFragment"
+        android:label="@string/service_disabled_fragment_label"
+        tools:layout="@layout/fragment_service_disabled">
+        <action
+            android:id="@+id/action_ServiceDisabledFragment_to_ServiceEnabledFragment"
+            app:destination="@id/ServiceEnabledFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/ServiceEnabledFragment"
+        android:name="com.mavenkalabs.adskipper.ServiceEnabledFragment"
+        android:label="@string/service_enabled_fragment_label"
+        tools:layout="@layout/fragment_service_enabled">
+        <action
+            android:id="@+id/action_ServiceEnabledFragment_to_ServiceDisabledFragment"
+            app:destination="@id/ServiceDisabledFragment" />
     </fragment>
 </navigation>
