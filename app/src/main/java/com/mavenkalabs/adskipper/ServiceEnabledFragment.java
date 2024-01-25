@@ -6,27 +6,27 @@ import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
 
-import com.mavenkalabs.adskipper.databinding.FragmentFirstBinding;
+import com.mavenkalabs.adskipper.databinding.FragmentServiceEnabledBinding;
 import com.mavenkalabs.adskipper.service.AdSkipperService;
 
 import java.util.Arrays;
 
-public class FirstFragment extends Fragment {
+public class ServiceEnabledFragment extends Fragment {
 
-    private FragmentFirstBinding binding;
+    private FragmentServiceEnabledBinding binding;
 
     @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState
     ) {
-
-        binding = FragmentFirstBinding.inflate(inflater, container, false);
+        binding = FragmentServiceEnabledBinding.inflate(inflater, container, false);
         return binding.getRoot();
 
     }
@@ -35,20 +35,17 @@ public class FirstFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        TextView textView = binding.getRoot().findViewById(R.id.textview_first);
-        if (textView != null) {
-            if (isA11yServiceEnabled()) {
-                textView.setText(R.string.a11y_service_enabled_message);
-            } else {
-                textView.setText(R.string.a11y_service_disabled_message);
-            }
+        if (!isA11yServiceEnabled()) {
+            NavController navController = NavHostFragment.findNavController(this);
+            navController.popBackStack();
+            navController.navigate(R.id.ServiceDisabledFragment);
         }
     }
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        binding.buttonFirst.setOnClickListener((v) -> {
+        binding.buttonGotoA11ySettings.setOnClickListener((v) -> {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);
         });

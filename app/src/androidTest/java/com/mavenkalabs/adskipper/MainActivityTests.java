@@ -19,6 +19,7 @@ import java.util.Objects;
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -39,6 +40,30 @@ public class MainActivityTests {
     }
 
     @Test
+    public void verifyUiAfterDisagree() {
+        Intent activityIntent = new Intent(getApplicationContext(), MainActivity.class);
+        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        getApplicationContext().startActivity(activityIntent);
+
+        boolean found = uiDevice.wait(Until.hasObject(By.pkg(Objects.requireNonNull(MainActivity.class.getPackage()).getName())
+                .depth(0)), TIMEOUT);
+        assertTrue(found);
+
+        // verify UI on first launch and then go to Accessibility Settings
+        found = uiDevice.hasObject(By.text(
+                getApplicationContext().getString(R.string.a11y_service_disabled_message)));
+        assertTrue(found);
+
+        found = uiDevice.findObject(
+                By.text(getApplicationContext().getString(R.string.disagree).toUpperCase())
+        ).clickAndWait(Until.newWindow(), TIMEOUT);
+        assertTrue(found);
+
+        assertNull(uiDevice.findObject(
+                By.pkg(Objects.requireNonNull(MainActivity.class.getPackage()).getName())));
+    }
+
+    @Test
     public void verifyUiAfterEnabling() {
         Intent activityIntent = new Intent(getApplicationContext(), MainActivity.class);
         activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -54,7 +79,7 @@ public class MainActivityTests {
         assertTrue(found);
 
         found = uiDevice.findObject(
-                By.text(getApplicationContext().getString(R.string.go_to_a11y_settings).toUpperCase())
+                By.text(getApplicationContext().getString(R.string.agree).toUpperCase())
         ).clickAndWait(Until.newWindow(), TIMEOUT);
         assertTrue(found);
 
@@ -65,7 +90,6 @@ public class MainActivityTests {
         found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.a11y_service_enabled_message))), 10000);
         assertTrue(found);
     }
-
 
     @Test
     public void verifyUiAfterDisabling() {
