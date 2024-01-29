@@ -7,7 +7,8 @@ Ad Skipper uses the AccessibilityService API to scan window content, detect the 
 Ad Skipper does not use or share any of your personal information or data.
 
 Supported Apps for skipping:
-- Youtube
+- Youtube Videos
+- Youtube Music
 
 Install the app on Google Play by scanning the QR code below
 
