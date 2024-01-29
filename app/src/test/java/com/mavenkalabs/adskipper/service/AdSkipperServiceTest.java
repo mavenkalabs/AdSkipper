@@ -14,7 +14,6 @@ import java.util.Collections;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -31,6 +30,8 @@ public class AdSkipperServiceTest {
 
     @Mock private AccessibilityEvent eventMock;
 
+    @Mock private AccessibilityNodeInfo nodeInfoMock;
+
     private AutoCloseable closeable;
 
     @Before
@@ -38,6 +39,11 @@ public class AdSkipperServiceTest {
         closeable = MockitoAnnotations.openMocks(this);
         service = new AdSkipperService();
 
+        when(eventMock.getSource()).thenReturn(nodeInfoMock);
+        when(eventMock.getPackageName()).thenReturn("com.google.android.youtube");
+        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString()))
+                .thenReturn(Collections.singletonList(nodeInfoMock));
+        when(nodeInfoMock.isClickable()).thenReturn(true);
     }
 
     @After
@@ -47,11 +53,6 @@ public class AdSkipperServiceTest {
 
     @Test
     public void verifyEvtHandling() {
-        AccessibilityNodeInfo nodeInfoMock = mock(AccessibilityNodeInfo.class);
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
-        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString()))
-                .thenReturn(Collections.singletonList(nodeInfoMock));
-        when(nodeInfoMock.isClickable()).thenReturn(true);
         service.onAccessibilityEvent(eventMock);
 
         verify(nodeInfoMock, times(1))
@@ -59,6 +60,8 @@ public class AdSkipperServiceTest {
     }
     @Test()
     public void verifyEvtHandlingNullSource() {
+        when(eventMock.getSource()).thenReturn(null);
+
         try {
             service.onAccessibilityEvent(eventMock);
         } catch (Throwable t) {
@@ -68,8 +71,6 @@ public class AdSkipperServiceTest {
 
     @Test()
     public void verifyEvtHandlingSourceNoChildren() {
-        AccessibilityNodeInfo nodeInfoMock = mock(AccessibilityNodeInfo.class);
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString()))
                 .thenReturn(Collections.emptyList());
         service.onAccessibilityEvent(eventMock);
@@ -79,12 +80,26 @@ public class AdSkipperServiceTest {
 
     @Test()
     public void verifyEvtHandlingSourceChildrenNotClickable() {
-        AccessibilityNodeInfo nodeInfoMock = mock(AccessibilityNodeInfo.class);
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
-        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString()))
-                .thenReturn(Collections.singletonList(nodeInfoMock));
         when(nodeInfoMock.isClickable()).thenReturn(false);
         service.onAccessibilityEvent(eventMock);
+        verify(nodeInfoMock, never())
+                .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
+    }
+
+    @Test
+    public void verifyEvtHandlingForYTMusic() {
+        when(eventMock.getPackageName()).thenReturn("com.google.android.apps.youtube.music");
+        service.onAccessibilityEvent(eventMock);
+
+        verify(nodeInfoMock, times(1))
+                .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
+    }
+
+    @Test
+    public void verifyEvtHandlingForUnsupportedPkg() {
+        when(eventMock.getPackageName()).thenReturn("com.google.android.apps.notube");
+        service.onAccessibilityEvent(eventMock);
+
         verify(nodeInfoMock, never())
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
     }

@@ -3,5 +3,5 @@
     android:accessibilityFeedbackType="feedbackGeneric"
     android:accessibilityEventTypes="typeWindowContentChanged"
     android:accessibilityFlags="flagReportViewIds"
-    android:packageNames="com.google.android.youtube"
+    android:packageNames="com.google.android.youtube,com.google.android.apps.youtube.music"
     android:canRetrieveWindowContent="true" />
