@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public class AdSkipperService extends AccessibilityService {
-    private boolean audioMuted = false;
+    private boolean isAdInProgress = false;
 
     private static final Map<String, String> PKG_TO_SKIP_ID_MAP = Map.of(
             "com.google.android.youtube", "skip_ad_button",
@@ -25,38 +25,46 @@ public class AdSkipperService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         String eventPkgName = event.getPackageName().toString();
         if (event.getSource() != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
-            String id = (audioMuted ? PKG_TO_SKIP_ID_MAP : PKG_TO_AD_START_ID_MAP).get(eventPkgName);
+            String id = (isAdInProgress ? PKG_TO_SKIP_ID_MAP : PKG_TO_AD_START_ID_MAP).get(eventPkgName);
             List<AccessibilityNodeInfo> nodes =
                     event.getSource().findAccessibilityNodeInfosByViewId(
                             String.join("", eventPkgName, ":id/", id));
             if (!nodes.isEmpty()) {
-               if (audioMuted) {
+               if (isAdInProgress) {
                    nodes.stream()
                            .filter(AccessibilityNodeInfo::isClickable)
-                           .findFirst().ifPresent(node -> node.performAction(AccessibilityNodeInfo.ACTION_CLICK));
+                           .findFirst().ifPresent(node -> {
+                               node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                               adjustVolume(false);
+                               isAdInProgress = false;
+                           });
+               } else {
+                   adjustVolume(true);
+                   isAdInProgress = true;
                }
-
-               toggleVolume();
            }
         }
     }
 
-    private void toggleVolume() {
-        ((AudioManager)getSystemService(AUDIO_SERVICE)).adjustStreamVolume(AudioManager.STREAM_MUSIC,
-                audioMuted ? AudioManager.ADJUST_UNMUTE : AudioManager.ADJUST_MUTE,
-                0);
-        audioMuted = !audioMuted;
+    private void adjustVolume(boolean mute) {
+        AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+
+        boolean currentState = audioManager.isStreamMute(AudioManager.STREAM_MUSIC);
+
+        if (currentState != mute) {
+            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,
+                    mute ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE, 0);
+        }
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        if (audioMuted) toggleVolume();
-
+        adjustVolume(false);
         return true;
     }
 
     @Override
     public void onInterrupt() {
-        if (audioMuted) toggleVolume();
+        adjustVolume(false);
     }
 }

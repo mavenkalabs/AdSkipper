@@ -51,6 +51,7 @@ public class AdSkipperServiceTest {
         closeable = MockitoAnnotations.openMocks(this);
 
         doReturn(audioManagerMock).when(service).getSystemService(eq(Context.AUDIO_SERVICE));
+        doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
 
         when(eventMock.getSource()).thenReturn(nodeInfoMock);
         when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
@@ -70,14 +71,17 @@ public class AdSkipperServiceTest {
                 .thenReturn(List.of(nodeInfoMock));
         service.onAccessibilityEvent(eventMock);
 
-        verify(audioManagerMock, times(1)).adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_MUTE), eq(0));
+        verify(audioManagerMock, times(1))
+                .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_MUTE), eq(0));
 
+        doReturn(true).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
+
         service.onAccessibilityEvent(eventMock);
 
-        verify(audioManagerMock, times(1)).adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
-
+        verify(audioManagerMock, times(1))
+                .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, times(1))
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
     }
