@@ -11,6 +11,7 @@ import java.util.Map;
 
 public class AdSkipperService extends AccessibilityService {
     private boolean isAdInProgress = false;
+    private long skippedTimestamp = 0;
 
     private static final Map<String, String> PKG_TO_SKIP_ID_MAP = Map.of(
             "com.google.android.youtube", "skip_ad_button",
@@ -21,15 +22,18 @@ public class AdSkipperService extends AccessibilityService {
             "com.google.android.apps.youtube.music", "ad_progress_text"
     );
 
+    private static final long QUIET_TIME = 5000;
+
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         String eventPkgName = event.getPackageName().toString();
+        long currentTimeStamp = System.currentTimeMillis();
         if (event.getSource() != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
             String id = (isAdInProgress ? PKG_TO_SKIP_ID_MAP : PKG_TO_AD_START_ID_MAP).get(eventPkgName);
             List<AccessibilityNodeInfo> nodes =
                     event.getSource().findAccessibilityNodeInfosByViewId(
                             String.join("", eventPkgName, ":id/", id));
-            if (!nodes.isEmpty()) {
+            if (!nodes.isEmpty() && (currentTimeStamp-skippedTimestamp) > QUIET_TIME) {
                if (isAdInProgress) {
                    nodes.stream()
                            .filter(AccessibilityNodeInfo::isClickable)
@@ -37,6 +41,7 @@ public class AdSkipperService extends AccessibilityService {
                                node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                adjustVolume(false);
                                isAdInProgress = false;
+                               skippedTimestamp = System.currentTimeMillis();
                            });
                } else {
                    adjustVolume(true);
@@ -60,11 +65,13 @@ public class AdSkipperService extends AccessibilityService {
     @Override
     public boolean onUnbind(Intent intent) {
         adjustVolume(false);
+        skippedTimestamp = 0;
         return true;
     }
 
     @Override
     public void onInterrupt() {
         adjustVolume(false);
+        skippedTimestamp = 0;
     }
 }
