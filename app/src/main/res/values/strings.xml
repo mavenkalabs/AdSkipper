@@ -10,6 +10,7 @@
     <string name="go_to_a11y_settings">Go to Accessibility Settings</string>
     <string name="agree">Agree</string>
     <string name="disagree">Disagree</string>
+    <string name="mute_ads">Mute Ads</string>
 
 
 </resources>

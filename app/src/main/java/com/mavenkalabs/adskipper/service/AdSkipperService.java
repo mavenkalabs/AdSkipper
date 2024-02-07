@@ -1,20 +1,30 @@
 package com.mavenkalabs.adskipper.service;
 
 import android.accessibilityservice.AccessibilityService;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import com.mavenkalabs.adskipper.ServiceEnabledFragment;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class AdSkipperService extends AccessibilityService  {
     private final AtomicLong advertTimeStamp = new AtomicLong(0);
+
+    private boolean muteAds = false;
+
+    private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
 
     private static final Map<String, String> PKG_TO_SKIP_ID_MAP = Map.of(
             "com.google.android.youtube", "skip_ad_button",
@@ -31,7 +41,9 @@ public class AdSkipperService extends AccessibilityService  {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        checkAndHandleAdEvt(event);
+        if (muteAds) {
+            checkAndHandleAdEvt(event);
+        }
         checkAndHandleSkipEvt(event);
     }
 
@@ -95,6 +107,24 @@ public class AdSkipperService extends AccessibilityService  {
         advertTimeStamp.set(0);
     }
 
+    @Override
+    protected void onServiceConnected() {
+        SharedPreferences prefs = getApplicationContext().getSharedPreferences(
+                getApplicationContext().getPackageName() + "_preferences",
+                Context.MODE_PRIVATE);
+        muteAds = prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false);
+        SharedPreferences.OnSharedPreferenceChangeListener listener;
+        prefs.registerOnSharedPreferenceChangeListener(listener = (p, key) -> {
+            Log.i(TAG, "onServiceConnected: pref changed " + key);
+
+            if (Objects.equals(key, ServiceEnabledFragment.MUTE_ADS_PREF)) {
+                muteAds = p.getBoolean(key, false);
+                Log.i(TAG, "onServiceConnected: muteAds now " + muteAds);
+            }
+        });
+        listenerRef.set(listener);
+    }
+
     private void runUnmuter() {
         final Timer timer = new Timer(true);
         timer.schedule(new TimerTask() {
@@ -110,7 +140,7 @@ public class AdSkipperService extends AccessibilityService  {
                                        advertTimeStamp.set(0);
                                        timer.cancel();
                                    }
-                               } 
+                               }
                            }
                        },
                 UNMUTER_RUN_INTERVAL,

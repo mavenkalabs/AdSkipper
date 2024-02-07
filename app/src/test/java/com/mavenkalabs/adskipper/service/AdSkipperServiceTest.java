@@ -2,6 +2,7 @@ package com.mavenkalabs.adskipper.service;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -17,9 +18,12 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -39,6 +43,8 @@ public class AdSkipperServiceTest {
 
     @Mock private AudioManager audioManagerMock;
 
+    @Mock private SharedPreferences sharedPreferencesMock;
+
     @Spy private AdSkipperService service;
 
     private AutoCloseable closeable;
@@ -53,6 +59,14 @@ public class AdSkipperServiceTest {
 
         doReturn(audioManagerMock).when(service).getSystemService(eq(Context.AUDIO_SERVICE));
         doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
+
+        Context contextMock = mock(Context.class);
+        doReturn(contextMock).when(service).getApplicationContext();
+        doReturn(AdSkipperService.class.getPackageName()).when(contextMock).getPackageName();
+        doReturn(sharedPreferencesMock).when(contextMock).getSharedPreferences(anyString(), anyInt());
+        when(sharedPreferencesMock.getBoolean(anyString(), anyBoolean())).thenReturn(true);
+
+        service.onServiceConnected();
     }
 
     @After
