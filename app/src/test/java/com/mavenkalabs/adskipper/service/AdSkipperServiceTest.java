@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,12 +53,6 @@ public class AdSkipperServiceTest {
 
         doReturn(audioManagerMock).when(service).getSystemService(eq(Context.AUDIO_SERVICE));
         doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
-
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
-        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
-        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString()))
-                .thenReturn(Collections.singletonList(nodeInfoMock));
-        when(nodeInfoMock.isClickable()).thenReturn(true);
     }
 
     @After
@@ -67,16 +62,24 @@ public class AdSkipperServiceTest {
 
     @Test
     public void verifyEvtHandling() {
+
+        when(eventMock.getSource()).thenReturn(nodeInfoMock);
+        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
+        when(nodeInfoMock.isClickable()).thenReturn(false);
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
                 .thenReturn(List.of(nodeInfoMock));
+
         service.onAccessibilityEvent(eventMock);
 
         verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_MUTE), eq(0));
 
         doReturn(true).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
+        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
+                .thenReturn(Collections.emptyList());
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
+        when(nodeInfoMock.isClickable()).thenReturn(true);
 
         service.onAccessibilityEvent(eventMock);
 
@@ -92,23 +95,33 @@ public class AdSkipperServiceTest {
         try {
             service.onAccessibilityEvent(eventMock);
         } catch (Throwable t) {
-            fail("Unexpected exception thrown" + t.getMessage());
+            fail("Unexpected exception thrown: " + t.getMessage());
         }
     }
 
     @Test()
     public void verifyEvtHandlingSourceNoChildren() {
+
+        when(eventMock.getSource()).thenReturn(nodeInfoMock);
+        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString()))
                 .thenReturn(Collections.emptyList());
+
         service.onAccessibilityEvent(eventMock);
+
         verify(nodeInfoMock, never())
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
     }
 
     @Test()
     public void verifyEvtHandlingSourceChildrenNotClickable() {
+
+        when(eventMock.getSource()).thenReturn(nodeInfoMock);
+        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
         when(nodeInfoMock.isClickable()).thenReturn(false);
+
         service.onAccessibilityEvent(eventMock);
+
         verify(nodeInfoMock, never())
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
     }
@@ -136,27 +149,38 @@ public class AdSkipperServiceTest {
     }
 
     @Test
-    public void verifyEvtHandlingWithMultipleEvents() {
+    public void verifyEvtHandlingWithMultipleEvents() throws InterruptedException {
+        when(eventMock.getSource()).thenReturn(nodeInfoMock);
+        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
                 .thenReturn(List.of(nodeInfoMock));
+
         service.onAccessibilityEvent(eventMock);
 
+        reset(nodeInfoMock);
         doReturn(true).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
+        when(nodeInfoMock.isClickable()).thenReturn(true);
 
         service.onAccessibilityEvent(eventMock);
 
+        reset(nodeInfoMock);
         doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
                 .thenReturn(List.of(nodeInfoMock));
+
         service.onAccessibilityEvent(eventMock);
 
-        doReturn(true).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
+        reset(nodeInfoMock);
+        doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
+        when(nodeInfoMock.isClickable()).thenReturn(true);
 
         service.onAccessibilityEvent(eventMock);
+
+        Thread.sleep(2000);
 
         verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_MUTE), eq(0));
