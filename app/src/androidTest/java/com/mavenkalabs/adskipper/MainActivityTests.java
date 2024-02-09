@@ -168,14 +168,14 @@ public class MainActivityTests {
         if (currentState != enable) {
             toggleButton.clickAndWait(Until.newWindow(), TIMEOUT);
             if (enable) {
-                found = uiDevice.findObject(By.text("Allow").clickable(true)).clickAndWait(Until.newWindow(), TIMEOUT);
+                found = uiDevice.findObject(By.text("Allow")).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
                 found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);
                 toggleButton = uiDevice.findObject(By.clazz(Switch.class).checked(true));
                 assertTrue(Objects.requireNonNull(toggleButton).isChecked());
             } else {
-                found = uiDevice.findObject(By.text("Stop").clickable(true)).clickAndWait(Until.newWindow(), TIMEOUT);
+                found = uiDevice.findObject(By.text("Stop")).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
                 found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);
