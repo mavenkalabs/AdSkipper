@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Objects;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
@@ -66,7 +67,7 @@ public class MainActivityTests {
     }
 
     @Test
-    public void verifyUiAfterEnabling() {
+    public void verifyUiAfterEnabling() throws IOException {
         Intent activityIntent = new Intent(getApplicationContext(), MainActivity.class);
         activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         getApplicationContext().startActivity(activityIntent);
@@ -112,7 +113,7 @@ public class MainActivityTests {
     }
 
     @Test
-    public void verifyUiAfterDisabling() {
+    public void verifyUiAfterDisabling() throws IOException {
         launchA11ySettings();
 
         toggleA11ySetting(true);
@@ -151,7 +152,7 @@ public class MainActivityTests {
         uiDevice.waitForWindowUpdate(null, TIMEOUT);
     }
 
-    private void toggleA11ySetting(boolean enable) {
+    private void toggleA11ySetting(boolean enable) throws IOException {
         // wait for it to show up
         boolean found = uiDevice.wait(Until.hasObject(By.text(APP_NAME)), TIMEOUT);
         assertTrue(found);
@@ -168,6 +169,7 @@ public class MainActivityTests {
         if (currentState != enable) {
             toggleButton.clickAndWait(Until.newWindow(), TIMEOUT);
             if (enable) {
+                uiDevice.dumpWindowHierarchy(System.out);
                 found = uiDevice.findObject(By.text("Allow").clickable(true)).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
                 found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
