@@ -41,7 +41,7 @@ jobs:
       - name: Unit tests
         run: ./gradlew test
 
-      - name: Upload test report
+      - name: Upload unit test report
         uses: actions/upload-artifact@v4
         with:
           name: unit_test_report
@@ -59,10 +59,10 @@ jobs:
           api-level: 29
           script: ./gradlew connectedCheck
 
-      - name: Upload test report
+      - name: Upload UI test report
         uses: actions/upload-artifact@v4
         with:
-          name: unit_test_report
+          name: ui_test_report
           path: app/build/reports/androidTests/connected/debug/
 
       - name: Build debug APK
