@@ -10,15 +10,19 @@ android {
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments += mapOf(
             "clearPackageData" to "true",
         )
     }
-
+    buildTypes {
+        debug {
+            enableAndroidTestCoverage = false
+        }
+    }
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
@@ -46,8 +50,10 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.navigation:navigation-fragment:2.7.6")
-    implementation("androidx.navigation:navigation-ui:2.7.6")
+    implementation("androidx.navigation:navigation-fragment:2.7.7")
+    implementation("androidx.navigation:navigation-ui:2.7.7")
+    implementation("androidx.annotation:annotation:1.7.1")
+    implementation("com.android.support.test:runner:1.0.2")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.9.0")
 
@@ -65,4 +71,5 @@ dependencies {
 
     // uiautomator
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.2.0")
+
 }

@@ -1,6 +1,8 @@
 package com.mavenkalabs.adskipper;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.widget.Switch;
 
@@ -89,6 +91,24 @@ public class MainActivityTests {
         // expect the service to be enabled now
         found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.a11y_service_enabled_message))), 10000);
         assertTrue(found);
+
+        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(false)), 1000);
+        assertTrue(found);
+
+        SharedPreferences prefs = getApplicationContext().getSharedPreferences(
+                getApplicationContext().getPackageName() + "_preferences",
+                Context.MODE_PRIVATE);
+        assertFalse(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
+
+        uiDevice.findObject(By.text(getApplicationContext().getString(R.string.mute_ads))).click();
+        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(true)), 1000);
+        assertTrue(found);
+        assertTrue(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
+
+        uiDevice.findObject(By.text(getApplicationContext().getString(R.string.mute_ads))).click();
+        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(false)), 1000);
+        assertTrue(found);
+        assertFalse(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
     }
 
     @Test
@@ -139,7 +159,7 @@ public class MainActivityTests {
         // open the Ad Skipper switch
         uiDevice.findObject(By.text(APP_NAME)).click();
 
-        found = uiDevice.wait(Until.hasObject(By.text("Use " + APP_NAME)), TIMEOUT);
+        found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
         assertTrue(found);
 
         // check if toggle state is different from desired state
@@ -150,14 +170,14 @@ public class MainActivityTests {
             if (enable) {
                 found = uiDevice.findObject(By.text("Allow")).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
-                found = uiDevice.wait(Until.hasObject(By.text("Use " + APP_NAME)), TIMEOUT);
+                found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);
                 toggleButton = uiDevice.findObject(By.clazz(Switch.class).checked(true));
                 assertTrue(Objects.requireNonNull(toggleButton).isChecked());
             } else {
                 found = uiDevice.findObject(By.text("Stop")).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
-                found = uiDevice.wait(Until.hasObject(By.text("Use " + APP_NAME)), TIMEOUT);
+                found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);
                 toggleButton = uiDevice.findObject(By.clazz(Switch.class).checked(false));
                 assertFalse(Objects.requireNonNull(toggleButton).isChecked());
