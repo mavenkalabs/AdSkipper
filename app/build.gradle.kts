@@ -20,7 +20,7 @@ android {
     }
     buildTypes {
         debug {
-            enableAndroidTestCoverage = true
+            enableAndroidTestCoverage = false
         }
     }
     testOptions {
