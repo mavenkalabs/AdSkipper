@@ -159,7 +159,7 @@ public class MainActivityTests {
         // open the Ad Skipper switch
         uiDevice.findObject(By.text(APP_NAME)).click();
 
-        found = uiDevice.wait(Until.hasObject(By.text("Use " + APP_NAME)), TIMEOUT);
+        found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
         assertTrue(found);
 
         // check if toggle state is different from desired state
@@ -170,14 +170,14 @@ public class MainActivityTests {
             if (enable) {
                 found = uiDevice.findObject(By.text("Allow")).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
-                found = uiDevice.wait(Until.hasObject(By.text("Use " + APP_NAME)), TIMEOUT);
+                found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);
                 toggleButton = uiDevice.findObject(By.clazz(Switch.class).checked(true));
                 assertTrue(Objects.requireNonNull(toggleButton).isChecked());
             } else {
                 found = uiDevice.findObject(By.text("Stop")).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
-                found = uiDevice.wait(Until.hasObject(By.text("Use " + APP_NAME)), TIMEOUT);
+                found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);
                 toggleButton = uiDevice.findObject(By.clazz(Switch.class).checked(false));
                 assertFalse(Objects.requireNonNull(toggleButton).isChecked());
