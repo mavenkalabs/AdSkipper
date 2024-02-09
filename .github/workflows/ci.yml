@@ -57,14 +57,14 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
-          script: ./gradlew connectedCheck
+          script: ./gradlew connectedDevDebugAndroidTest --stacktrace
 
       - name: Upload UI test report
         uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
           name: ui_test_report
-          path: app/build/reports/androidTests/connected/debug/
+          path: app/build/reports/androidTests/connected/**
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
