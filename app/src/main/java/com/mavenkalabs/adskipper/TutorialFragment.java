@@ -1,5 +1,6 @@
 package com.mavenkalabs.adskipper;
 
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -18,10 +19,12 @@ public class TutorialFragment extends DialogFragment {
     @Override
     public View onCreateView(@androidx.annotation.NonNull LayoutInflater inflater, @androidx.annotation.Nullable ViewGroup container, @androidx.annotation.Nullable Bundle savedInstanceState) {
         binding = FragmentTutorialBinding.inflate(inflater, container, false);
+        boolean nightMode = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+
         binding.videoTutorial.setVideoURI(Uri.parse("android.resource://"
                 + requireContext().getPackageName()
                 + "/"
-                + R.raw.tutorial));
+                + (nightMode ? R.raw.tutorial_dark : R.raw.tutorial_light)));
         binding.videoTutorial.start();
         binding.videoTutorial.setOnCompletionListener((player) -> dismiss());
 
