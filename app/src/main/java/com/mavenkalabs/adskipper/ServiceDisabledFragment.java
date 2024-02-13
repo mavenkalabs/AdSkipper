@@ -53,6 +53,9 @@ public class ServiceDisabledFragment extends Fragment {
 
         binding.buttonDisagree.setOnClickListener((v) ->
                 requireActivity().finishAndRemoveTask());
+
+        binding.buttonTutorial.setOnClickListener((v) -> new TutorialFragment().show(
+                getChildFragmentManager(), TutorialFragment.TAG));
     }
 
     @Override

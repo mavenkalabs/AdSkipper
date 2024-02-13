@@ -4,6 +4,7 @@
     <!-- Strings used for fragments for navigation -->
     <string name="service_disabled_fragment_label">Service Disabled Fragment</string>
     <string name="service_enabled_fragment_label">Service Enabled Fragment</string>
+    <string name="tutorial_fragment_label">Tutorial Fragment</string>
 
     <string name="a11y_service_disabled_message">Ad Skipper is an app that automates clicking the Skip Ads button that appears in certain video apps.\n\nIt uses Accessibility features to scan window content, detect the Skip Ads button and then click on the Skip Ads button on your behalf.\n\nAd Skipper does not use or share any of your personal information or data.\n \nClick on Agree to continue and enable the service in Accessibility Settings.</string>
     <string name="a11y_service_enabled_message">Ad Skipper is ready for use. You can disable it in Accessibility Settings.</string>
@@ -11,6 +12,5 @@
     <string name="agree">Agree</string>
     <string name="disagree">Disagree</string>
     <string name="mute_ads">Mute Ads</string>
-
-
+    <string name="tutorial">How do I do this?</string>
 </resources>
