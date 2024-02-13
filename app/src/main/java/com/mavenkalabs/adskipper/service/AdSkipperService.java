@@ -32,7 +32,7 @@ public class AdSkipperService extends AccessibilityService  {
     );
     private static final Map<String, String> PKG_TO_ADVERT_ID_MAP = Map.of(
             "com.google.android.youtube", "ad_progress_text",
-            "com.google.android.apps.youtube.music", "ad_progress_text"
+            "com.google.android.apps.youtube.music", "player_learn_more_button"
     );
 
     private static final long UNMUTER_RUN_INTERVAL = 1000;

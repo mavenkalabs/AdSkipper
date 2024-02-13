@@ -21,4 +21,14 @@
             android:id="@+id/action_ServiceEnabledFragment_to_ServiceDisabledFragment"
             app:destination="@id/ServiceDisabledFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/TutorialFragment"
+        android:name="com.mavenkalabs.adskipper.TutorialFragment"
+        android:label="@string/service_enabled_fragment_label"
+        tools:layout="@layout/fragment_tutorial">
+        <action
+            android:id="@+id/action_ServiceEnabledFragment_to_ServiceDisabledFragment"
+            app:destination="@id/ServiceDisabledFragment" />
+    </fragment>
+
 </navigation>

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.widget.Switch;
+import android.widget.VideoView;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.uiautomator.By;
@@ -109,6 +110,31 @@ public class MainActivityTests {
         found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(false)), 1000);
         assertTrue(found);
         assertFalse(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
+    }
+    @Test
+    public void verifyUiTutorial() {
+        Intent activityIntent = new Intent(getApplicationContext(), MainActivity.class);
+        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        getApplicationContext().startActivity(activityIntent);
+
+        boolean found = uiDevice.wait(Until.hasObject(By.pkg(Objects.requireNonNull(MainActivity.class.getPackage()).getName())
+                .depth(0)), TIMEOUT);
+        assertTrue(found);
+
+        found = uiDevice.hasObject(By.text(
+                getApplicationContext().getString(R.string.tutorial)));
+        assertTrue(found);
+
+        found = uiDevice.findObject(
+                By.text(getApplicationContext().getString(R.string.tutorial))
+        ).clickAndWait(Until.newWindow(), TIMEOUT);
+        assertTrue(found);
+
+        found = uiDevice.hasObject(By.clazz(VideoView.class));
+        assertTrue(found);
+
+        found = uiDevice.wait(Until.gone(By.clazz(VideoView.class)), 20000);
+        assertTrue(found);
     }
 
     @Test
