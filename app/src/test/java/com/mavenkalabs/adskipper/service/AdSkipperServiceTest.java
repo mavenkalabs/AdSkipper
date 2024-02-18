@@ -7,9 +7,13 @@ import android.media.AudioManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import com.mavenkalabs.adskipper.ServiceEnabledFragment;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -47,6 +51,9 @@ public class AdSkipperServiceTest {
 
     @Spy private AdSkipperService service;
 
+    @Captor
+    ArgumentCaptor<SharedPreferences.OnSharedPreferenceChangeListener> listenerArgumentCaptor;
+
     private AutoCloseable closeable;
 
     private static final String YT_PKG_NAME = "com.google.android.youtube";
@@ -66,6 +73,14 @@ public class AdSkipperServiceTest {
         doReturn(sharedPreferencesMock).when(contextMock).getSharedPreferences(anyString(), anyInt());
         when(sharedPreferencesMock.getBoolean(anyString(), anyBoolean())).thenReturn(true);
 
+        when(eventMock.getSource()).thenReturn(nodeInfoMock);
+        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
+        when(nodeInfoMock.isClickable()).thenReturn(false);
+        when(nodeInfoMock.isVisibleToUser()).thenReturn(false);
+        when(nodeInfoMock.isEnabled()).thenReturn(false);
+        doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
+        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString())).thenReturn(Collections.emptyList());
+
         service.onServiceConnected();
     }
 
@@ -76,10 +91,6 @@ public class AdSkipperServiceTest {
 
     @Test
     public void verifyEvtHandling() {
-
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
-        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
-        when(nodeInfoMock.isClickable()).thenReturn(false);
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
                 .thenReturn(List.of(nodeInfoMock));
 
@@ -94,6 +105,8 @@ public class AdSkipperServiceTest {
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
         when(nodeInfoMock.isClickable()).thenReturn(true);
+        when(nodeInfoMock.isVisibleToUser()).thenReturn(true);
+        when(nodeInfoMock.isEnabled()).thenReturn(true);
 
         service.onAccessibilityEvent(eventMock);
 
@@ -115,12 +128,6 @@ public class AdSkipperServiceTest {
 
     @Test()
     public void verifyEvtHandlingSourceNoChildren() {
-
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
-        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
-        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(anyString()))
-                .thenReturn(Collections.emptyList());
-
         service.onAccessibilityEvent(eventMock);
 
         verify(nodeInfoMock, never())
@@ -129,10 +136,8 @@ public class AdSkipperServiceTest {
 
     @Test()
     public void verifyEvtHandlingSourceChildrenNotClickable() {
-
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
-        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
-        when(nodeInfoMock.isClickable()).thenReturn(false);
+        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
+                .thenReturn(List.of(nodeInfoMock));
 
         service.onAccessibilityEvent(eventMock);
 
@@ -142,9 +147,7 @@ public class AdSkipperServiceTest {
 
     @Test
     public void verifyEvtHandlingForYTMusic() {
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
         when(eventMock.getPackageName()).thenReturn(YT_MUSIC_PKG_NAME);
-        when(nodeInfoMock.isClickable()).thenReturn(false);
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_MUSIC_PKG_NAME+":id/player_learn_more_button")))
                 .thenReturn(List.of(nodeInfoMock));
 
@@ -159,6 +162,8 @@ public class AdSkipperServiceTest {
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_MUSIC_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
         when(nodeInfoMock.isClickable()).thenReturn(true);
+        when(nodeInfoMock.isEnabled()).thenReturn(true);
+        when(nodeInfoMock.isVisibleToUser()).thenReturn(true);
 
         service.onAccessibilityEvent(eventMock);
 
@@ -185,8 +190,6 @@ public class AdSkipperServiceTest {
 
     @Test
     public void verifyEvtHandlingWithMultipleEvents() throws InterruptedException {
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
-        when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
                 .thenReturn(List.of(nodeInfoMock));
 
@@ -197,6 +200,8 @@ public class AdSkipperServiceTest {
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
         when(nodeInfoMock.isClickable()).thenReturn(true);
+        when(nodeInfoMock.isVisibleToUser()).thenReturn(true);
+        when(nodeInfoMock.isEnabled()).thenReturn(true);
 
         service.onAccessibilityEvent(eventMock);
 
@@ -212,6 +217,8 @@ public class AdSkipperServiceTest {
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
                 .thenReturn(List.of(nodeInfoMock));
         when(nodeInfoMock.isClickable()).thenReturn(true);
+        when(nodeInfoMock.isVisibleToUser()).thenReturn(true);
+        when(nodeInfoMock.isEnabled()).thenReturn(true);
 
         service.onAccessibilityEvent(eventMock);
 
@@ -223,5 +230,22 @@ public class AdSkipperServiceTest {
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, times(1))
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
+    }
+
+    @Test
+    public void verifyMutePreferenceChangeDynamicUpdate() {
+        verify(sharedPreferencesMock).registerOnSharedPreferenceChangeListener(
+                listenerArgumentCaptor.capture());
+
+        doReturn(false).when(sharedPreferencesMock).getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false);
+        listenerArgumentCaptor.getValue().onSharedPreferenceChanged(sharedPreferencesMock, ServiceEnabledFragment.MUTE_ADS_PREF);
+
+        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
+                .thenReturn(List.of(nodeInfoMock));
+
+        service.onAccessibilityEvent(eventMock);
+
+        verify(audioManagerMock, never())
+                .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), anyInt(), anyInt());
     }
 }

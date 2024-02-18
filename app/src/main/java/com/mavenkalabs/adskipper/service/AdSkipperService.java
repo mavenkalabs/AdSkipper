@@ -16,12 +16,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class AdSkipperService extends AccessibilityService  {
-    private final AtomicLong advertTimeStamp = new AtomicLong(0);
+    private long advertTimeStamp = 0;
 
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private boolean muteAds = false;
 
     private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
@@ -54,12 +56,20 @@ public class AdSkipperService extends AccessibilityService  {
                     event.getSource().findAccessibilityNodeInfosByViewId(
                             String.join("", eventPkgName, ":id/", PKG_TO_ADVERT_ID_MAP.get(eventPkgName)));
             if (!nodes.isEmpty()) {
-                Log.i(TAG, "checkAndHandleAdEvt: Ad detected");
                 nodes.stream()
                         .findFirst().ifPresent(node -> {
-                            if (advertTimeStamp.getAndSet(System.currentTimeMillis())  == 0) {
-                                toggleMute(true);
-                                runUnmuter();
+                            Lock writeLock = lock.writeLock();
+                            if (writeLock.tryLock()) {
+                                try {
+                                    if (advertTimeStamp == 0) {
+                                        Log.i(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
+                                        toggleMute(true);
+                                        runUnmuter();
+                                    }
+                                    advertTimeStamp = System.currentTimeMillis();
+                                } finally {
+                                    writeLock.unlock();
+                                }
                             }
                         });
             }
@@ -73,11 +83,13 @@ public class AdSkipperService extends AccessibilityService  {
                     event.getSource().findAccessibilityNodeInfosByViewId(
                             String.join("", eventPkgName, ":id/", PKG_TO_SKIP_ID_MAP.get(eventPkgName)));
             if (!nodes.isEmpty()) {
-                Log.i(TAG, "checkAndHandleSkipEvt: Skipped ad");
                 nodes.stream()
                         .filter(AccessibilityNodeInfo::isClickable)
+                        .filter(AccessibilityNodeInfo::isVisibleToUser)
+                        .filter(AccessibilityNodeInfo::isEnabled)
                         .findFirst()
                         .ifPresent(accessibilityNodeInfo -> {
+                            Log.i(TAG, "checkAndHandleSkipEvt: Skipped ad and unmuted");
                             accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                             toggleMute(false);
                         });
@@ -97,14 +109,14 @@ public class AdSkipperService extends AccessibilityService  {
     @Override
     public boolean onUnbind(Intent intent) {
         toggleMute(false);
-        advertTimeStamp.set(0);
+        advertTimeStamp = 0;
         return true;
     }
 
     @Override
     public void onInterrupt() {
         toggleMute(false);
-        advertTimeStamp.set(0);
+        advertTimeStamp = 0;
     }
 
     @Override
@@ -131,14 +143,30 @@ public class AdSkipperService extends AccessibilityService  {
                            @Override
                            public void run() {
                                Log.i(TAG, "Unmuter running");
-                               long lastOccurrence = advertTimeStamp.get();
+                               Lock readLock = lock.readLock();
+                               long lastOccurrence;
+                               try {
+                                   readLock.lock();
+                                   lastOccurrence = advertTimeStamp;
+                               } finally {
+                                   readLock.unlock();
+                               }
+
                                if (lastOccurrence > 0) {
                                    long currentTimeStamp = System.currentTimeMillis();
                                    if ((currentTimeStamp - lastOccurrence) >= UNMUTER_RUN_INTERVAL) {
-                                       Log.i(TAG, "Unmuter is unmuting and then dying");
-                                       toggleMute(false);
-                                       advertTimeStamp.set(0);
-                                       timer.cancel();
+                                       Lock writeLock = lock.writeLock();
+                                       if (writeLock.tryLock()) {
+                                           try {
+                                               Log.i(TAG, "Unmuter is unmuting and then dying");
+                                               toggleMute(false);
+
+                                               advertTimeStamp = 0;
+                                               timer.cancel();
+                                           } finally {
+                                            writeLock.unlock();
+                                           }
+                                       }
                                    }
                                }
                            }
