@@ -205,6 +205,9 @@ public class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock);
 
+        verify(nodeInfoMock, times(1))
+                .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
+
         reset(nodeInfoMock);
         doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
@@ -228,7 +231,7 @@ public class AdSkipperServiceTest {
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_MUTE), eq(0));
         verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
-        verify(nodeInfoMock, times(1))
+        verify(nodeInfoMock, never())
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
     }
 

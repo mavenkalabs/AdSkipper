@@ -23,6 +23,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AdSkipperService extends AccessibilityService  {
     private long advertTimeStamp = 0;
 
+    private long skipAdClickTimestamp = 0;
+
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private boolean muteAds = false;
 
@@ -37,7 +39,7 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.apps.youtube.music", "player_learn_more_button"
     );
 
-    private static final long UNMUTER_RUN_INTERVAL = 1000;
+    private static final long QUIET_INTERVAL = 1000;
 
     private static final String TAG = AdSkipperService.class.getName();
 
@@ -77,6 +79,11 @@ public class AdSkipperService extends AccessibilityService  {
     }
 
     private void checkAndHandleSkipEvt(AccessibilityEvent event) {
+        if ((System.currentTimeMillis() - skipAdClickTimestamp) < QUIET_INTERVAL) {
+            Log.i(TAG, "checkAndHandleSkipEvt: ignored skip event");
+            return;
+        }
+
         String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
         if (event.getSource() != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
             List<AccessibilityNodeInfo> nodes =
@@ -92,6 +99,7 @@ public class AdSkipperService extends AccessibilityService  {
                             Log.i(TAG, "checkAndHandleSkipEvt: Skipped ad and unmuted");
                             accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                             toggleMute(false);
+                            skipAdClickTimestamp = System.currentTimeMillis();
                         });
             }
         }
@@ -154,7 +162,7 @@ public class AdSkipperService extends AccessibilityService  {
 
                                if (lastOccurrence > 0) {
                                    long currentTimeStamp = System.currentTimeMillis();
-                                   if ((currentTimeStamp - lastOccurrence) >= UNMUTER_RUN_INTERVAL) {
+                                   if ((currentTimeStamp - lastOccurrence) >= QUIET_INTERVAL) {
                                        Lock writeLock = lock.writeLock();
                                        if (writeLock.tryLock()) {
                                            try {
@@ -171,7 +179,7 @@ public class AdSkipperService extends AccessibilityService  {
                                }
                            }
                        },
-                UNMUTER_RUN_INTERVAL,
-                UNMUTER_RUN_INTERVAL);
+                QUIET_INTERVAL,
+                QUIET_INTERVAL);
     }
 }
