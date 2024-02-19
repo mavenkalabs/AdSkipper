@@ -11,6 +11,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import com.mavenkalabs.adskipper.ServiceEnabledFragment;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,9 +35,9 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.youtube", "skip_ad_button",
             "com.google.android.apps.youtube.music", "skip_ad_button"
     );
-    private static final Map<String, String> PKG_TO_ADVERT_ID_MAP = Map.of(
-            "com.google.android.youtube", "ad_progress_text",
-            "com.google.android.apps.youtube.music", "player_learn_more_button"
+    private static final Map<String, List<String>> PKG_TO_ADVERT_ID_MAP = Map.of(
+            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text"),
+            "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
     private static final long QUIET_INTERVAL = 1000;
@@ -54,9 +55,14 @@ public class AdSkipperService extends AccessibilityService  {
     private void checkAndHandleAdEvt(AccessibilityEvent event) {
         String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
         if (event.getSource() != null && PKG_TO_ADVERT_ID_MAP.containsKey(eventPkgName)) {
-            List<AccessibilityNodeInfo> nodes =
-                    event.getSource().findAccessibilityNodeInfosByViewId(
-                            String.join("", eventPkgName, ":id/", PKG_TO_ADVERT_ID_MAP.get(eventPkgName)));
+            List<AccessibilityNodeInfo> nodes = Collections.emptyList();
+            for (String viewId : Objects.requireNonNull(PKG_TO_ADVERT_ID_MAP.get(eventPkgName))) {
+                nodes =
+                        event.getSource().findAccessibilityNodeInfosByViewId(
+                                String.join("", eventPkgName, ":id/", viewId));
+                if (!nodes.isEmpty()) break;
+            }
+
             if (!nodes.isEmpty()) {
                 nodes.stream()
                         .findFirst().ifPresent(node -> {
