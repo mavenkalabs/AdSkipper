@@ -8,7 +8,10 @@ Simple minimalist Android-only app to click the Skip Ads button on certain video
 
 ### Short video tutorial 
 How to enable the service on your phone: 
-https://github.com/mavenkalabs/AdSkipper/assets/44828328/c2bfc915-d6c6-4a82-b243-410c1fbf8a82
+
+
+https://github.com/mavenkalabs/AdSkipper/assets/44828328/c226478b-ed3e-47e0-b167-00f08f3fb89a
+
 
 ### Supported Apps for skipping:
 - Youtube Videos
