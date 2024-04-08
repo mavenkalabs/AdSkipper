@@ -70,9 +70,11 @@ public class AdSkipperService extends AccessibilityService  {
                             if (writeLock.tryLock()) {
                                 try {
                                     if (advertTimeStamp == 0) {
-                                        Log.i(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
+                                        Log.d(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
                                         toggleMute(true);
                                         runUnmuter();
+                                    } else {
+                                        Log.d(TAG, "checkAndHandleAdEvt: Ignored ad event");
                                     }
                                     advertTimeStamp = System.currentTimeMillis();
                                 } finally {
@@ -86,7 +88,7 @@ public class AdSkipperService extends AccessibilityService  {
 
     private void checkAndHandleSkipEvt(AccessibilityEvent event) {
         if ((System.currentTimeMillis() - skipAdClickTimestamp) < QUIET_INTERVAL) {
-            Log.i(TAG, "checkAndHandleSkipEvt: ignored skip event");
+            Log.d(TAG, "checkAndHandleSkipEvt: ignored skip event");
             return;
         }
 
@@ -102,9 +104,8 @@ public class AdSkipperService extends AccessibilityService  {
                         .filter(AccessibilityNodeInfo::isEnabled)
                         .findFirst()
                         .ifPresent(accessibilityNodeInfo -> {
-                            Log.i(TAG, "checkAndHandleSkipEvt: Skipped ad and unmuted");
+                            Log.d(TAG, "checkAndHandleSkipEvt: Skipped ad");
                             accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                            toggleMute(false);
                             skipAdClickTimestamp = System.currentTimeMillis();
                         });
             }
@@ -141,11 +142,11 @@ public class AdSkipperService extends AccessibilityService  {
         muteAds = prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false);
         SharedPreferences.OnSharedPreferenceChangeListener listener;
         prefs.registerOnSharedPreferenceChangeListener(listener = (p, key) -> {
-            Log.i(TAG, "onServiceConnected: pref changed " + key);
+            Log.d(TAG, "onServiceConnected: pref changed " + key);
 
             if (Objects.equals(key, ServiceEnabledFragment.MUTE_ADS_PREF)) {
                 muteAds = p.getBoolean(key, false);
-                Log.i(TAG, "onServiceConnected: muteAds now " + muteAds);
+                Log.d(TAG, "onServiceConnected: muteAds now " + muteAds);
             }
         });
         listenerRef.set(listener);
@@ -156,7 +157,7 @@ public class AdSkipperService extends AccessibilityService  {
         timer.schedule(new TimerTask() {
                            @Override
                            public void run() {
-                               Log.i(TAG, "Unmuter running");
+                               Log.d(TAG, "Unmuter running");
                                Lock readLock = lock.readLock();
                                long lastOccurrence;
                                try {
@@ -172,7 +173,7 @@ public class AdSkipperService extends AccessibilityService  {
                                        Lock writeLock = lock.writeLock();
                                        if (writeLock.tryLock()) {
                                            try {
-                                               Log.i(TAG, "Unmuter is unmuting and then dying");
+                                               Log.d(TAG, "Unmuter is unmuting and then dying");
                                                toggleMute(false);
 
                                                advertTimeStamp = 0;
