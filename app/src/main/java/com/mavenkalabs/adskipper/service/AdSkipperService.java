@@ -73,6 +73,8 @@ public class AdSkipperService extends AccessibilityService  {
                                         Log.d(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
                                         toggleMute(true);
                                         runUnmuter();
+                                    } else {
+                                        Log.d(TAG, "checkAndHandleAdEvt: Ignored ad event");
                                     }
                                     advertTimeStamp = System.currentTimeMillis();
                                 } finally {
@@ -102,9 +104,8 @@ public class AdSkipperService extends AccessibilityService  {
                         .filter(AccessibilityNodeInfo::isEnabled)
                         .findFirst()
                         .ifPresent(accessibilityNodeInfo -> {
-                            Log.d(TAG, "checkAndHandleSkipEvt: Skipped ad and unmuted");
+                            Log.d(TAG, "checkAndHandleSkipEvt: Skipped ad");
                             accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                            toggleMute(false);
                             skipAdClickTimestamp = System.currentTimeMillis();
                         });
             }

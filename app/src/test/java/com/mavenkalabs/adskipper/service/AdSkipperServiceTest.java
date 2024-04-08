@@ -110,7 +110,7 @@ public class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock);
 
-        verify(audioManagerMock, times(1))
+        verify(audioManagerMock, never())
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, times(1))
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
@@ -167,7 +167,7 @@ public class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock);
 
-        verify(audioManagerMock, times(1))
+        verify(audioManagerMock, never())
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, times(1))
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
@@ -229,7 +229,7 @@ public class AdSkipperServiceTest {
 
         verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_MUTE), eq(0));
-        verify(audioManagerMock, times(1))
+        verify(audioManagerMock, never())
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, never())
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
