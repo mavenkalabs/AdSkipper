@@ -31,9 +31,9 @@ public class AdSkipperService extends AccessibilityService  {
 
     private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
 
-    private static final Map<String, String> PKG_TO_SKIP_ID_MAP = Map.of(
-            "com.google.android.youtube", "skip_ad_button",
-            "com.google.android.apps.youtube.music", "skip_ad_button"
+    private static final Map<String, List<String>> PKG_TO_SKIP_ID_MAP = Map.of(
+            "com.google.android.youtube", List.of("skip_ad_button", "action"),
+            "com.google.android.apps.youtube.music", List.of("skip_ad_button")
     );
     private static final Map<String, List<String>> PKG_TO_ADVERT_ID_MAP = Map.of(
             "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text"),
@@ -94,9 +94,13 @@ public class AdSkipperService extends AccessibilityService  {
 
         String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
         if (event.getSource() != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
-            List<AccessibilityNodeInfo> nodes =
-                    event.getSource().findAccessibilityNodeInfosByViewId(
-                            String.join("", eventPkgName, ":id/", PKG_TO_SKIP_ID_MAP.get(eventPkgName)));
+            List<AccessibilityNodeInfo> nodes = Collections.emptyList();
+            for (String viewId : Objects.requireNonNull(PKG_TO_SKIP_ID_MAP.get(eventPkgName))) {
+                nodes =
+                        event.getSource().findAccessibilityNodeInfosByViewId(
+                                String.join("", eventPkgName, ":id/", viewId));
+                if (!nodes.isEmpty()) break;
+            }
             if (!nodes.isEmpty()) {
                 nodes.stream()
                         .filter(AccessibilityNodeInfo::isClickable)
