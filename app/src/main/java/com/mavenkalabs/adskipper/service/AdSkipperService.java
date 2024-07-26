@@ -33,7 +33,7 @@ public class AdSkipperService extends AccessibilityService  {
 
     private static final Map<String, List<String>> PKG_TO_SKIP_ID_MAP = Map.of(
             "com.google.android.youtube", List.of("skip_ad_button", "action"),
-            "com.google.android.apps.youtube.music", List.of("skip_ad_button", "action")
+            "com.google.android.apps.youtube.music", List.of("skip_ad_button", "snackbar_action")
     );
     private static final Map<String, List<String>> PKG_TO_ADVERT_ID_MAP = Map.of(
             "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text"),
