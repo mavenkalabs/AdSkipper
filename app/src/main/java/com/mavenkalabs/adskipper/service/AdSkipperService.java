@@ -53,12 +53,13 @@ public class AdSkipperService extends AccessibilityService  {
     }
 
     private void checkAndHandleAdEvt(AccessibilityEvent event) {
-        String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
-        if (event.getSource() != null && PKG_TO_ADVERT_ID_MAP.containsKey(eventPkgName)) {
+        final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
+        final AccessibilityNodeInfo eventSource = event.getSource();
+        if (eventSource != null && PKG_TO_ADVERT_ID_MAP.containsKey(eventPkgName)) {
             List<AccessibilityNodeInfo> nodes = Collections.emptyList();
             for (String viewId : Objects.requireNonNull(PKG_TO_ADVERT_ID_MAP.get(eventPkgName))) {
                 nodes =
-                        event.getSource().findAccessibilityNodeInfosByViewId(
+                        eventSource.findAccessibilityNodeInfosByViewId(
                                 String.join("", eventPkgName, ":id/", viewId));
                 if (!nodes.isEmpty()) break;
             }
@@ -92,12 +93,13 @@ public class AdSkipperService extends AccessibilityService  {
             return;
         }
 
-        String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
-        if (event.getSource() != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
+        final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
+        final AccessibilityNodeInfo eventSource = event.getSource();
+        if (eventSource != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
             List<AccessibilityNodeInfo> nodes = Collections.emptyList();
             for (String viewId : Objects.requireNonNull(PKG_TO_SKIP_ID_MAP.get(eventPkgName))) {
                 nodes =
-                        event.getSource().findAccessibilityNodeInfosByViewId(
+                        eventSource.findAccessibilityNodeInfosByViewId(
                                 String.join("", eventPkgName, ":id/", viewId));
                 if (!nodes.isEmpty()) break;
             }
