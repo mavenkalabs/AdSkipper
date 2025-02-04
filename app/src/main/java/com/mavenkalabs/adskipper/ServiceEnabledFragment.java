@@ -53,17 +53,18 @@ public class ServiceEnabledFragment extends Fragment {
             startActivity(intent);
         });
 
+        final SharedPreferences preferences = requireContext().getSharedPreferences(
+                requireContext().getPackageName() + "_preferences",
+                Context.MODE_PRIVATE);
+        if (!preferences.contains(MUTE_ADS_PREF)) {
+            preferences.edit().putBoolean(MUTE_ADS_PREF, true).apply();
+        }
+
         binding.checkboxMuteAds.setChecked(
-                requireContext().getSharedPreferences(
-                        requireContext().getPackageName() + "_preferences",
-                        Context.MODE_PRIVATE)
-                        .getBoolean(MUTE_ADS_PREF, false));
+                preferences.getBoolean(MUTE_ADS_PREF, false));
 
         binding.checkboxMuteAds.setOnCheckedChangeListener((v, isChecked) -> {
-            SharedPreferences prefs = requireContext().getSharedPreferences(
-                    requireContext().getPackageName() + "_preferences",
-                    Context.MODE_PRIVATE);
-            prefs.edit().putBoolean(MUTE_ADS_PREF, isChecked).apply();
+            preferences.edit().putBoolean(MUTE_ADS_PREF, isChecked).apply();
         });
     }
 

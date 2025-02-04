@@ -93,23 +93,23 @@ public class MainActivityTests {
         found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.a11y_service_enabled_message))), 10000);
         assertTrue(found);
 
-        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(false)), 1000);
+        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(true)), 1000);
         assertTrue(found);
 
         SharedPreferences prefs = getApplicationContext().getSharedPreferences(
                 getApplicationContext().getPackageName() + "_preferences",
                 Context.MODE_PRIVATE);
-        assertFalse(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
-
-        uiDevice.findObject(By.text(getApplicationContext().getString(R.string.mute_ads))).click();
-        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(true)), 1000);
-        assertTrue(found);
         assertTrue(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
 
         uiDevice.findObject(By.text(getApplicationContext().getString(R.string.mute_ads))).click();
         found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(false)), 1000);
         assertTrue(found);
         assertFalse(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
+
+        uiDevice.findObject(By.text(getApplicationContext().getString(R.string.mute_ads))).click();
+        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(true)), 1000);
+        assertTrue(found);
+        assertTrue(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
     }
     @Test
     public void verifyUiTutorial() {
