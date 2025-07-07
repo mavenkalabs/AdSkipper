@@ -201,7 +201,7 @@ public class MainActivityTests {
                 toggleButton = uiDevice.findObject(By.clazz(Switch.class).checked(true));
                 assertTrue(Objects.requireNonNull(toggleButton).isChecked());
             } else {
-                found = uiDevice.findObject(By.text("Turn off")).clickAndWait(Until.newWindow(), TIMEOUT);
+                found = uiDevice.findObject(By.text("Stop")).clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
                 found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);
