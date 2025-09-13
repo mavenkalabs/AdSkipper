@@ -22,6 +22,7 @@ import java.util.Objects;
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -201,7 +202,12 @@ public class MainActivityTests {
                 toggleButton = uiDevice.findObject(By.clazz(Switch.class).checked(true));
                 assertTrue(Objects.requireNonNull(toggleButton).isChecked());
             } else {
-                found = uiDevice.findObject(By.text("Stop")).clickAndWait(Until.newWindow(), TIMEOUT);
+                UiObject2 uiObject2 = uiDevice.findObject(By.text("Turn off"));
+                if (uiObject2 == null) {
+                    uiObject2 = uiDevice.findObject(By.text("Stop"));
+                }
+                assertNotNull(uiObject2);
+                found = uiObject2.clickAndWait(Until.newWindow(), TIMEOUT);
                 assertTrue(found);
                 found = uiDevice.wait(Until.hasObject(By.clazz(Switch.class)), TIMEOUT);
                 assertTrue(found);

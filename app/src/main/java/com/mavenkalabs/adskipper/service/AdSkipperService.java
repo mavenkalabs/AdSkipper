@@ -40,7 +40,7 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
-    private static final long QUIET_INTERVAL = 1000;
+    private static final long QUIET_INTERVAL = 500;
 
     private static final String TAG = AdSkipperService.class.getName();
 
@@ -65,24 +65,21 @@ public class AdSkipperService extends AccessibilityService  {
             }
 
             if (!nodes.isEmpty()) {
-                nodes.stream()
-                        .findFirst().ifPresent(node -> {
-                            Lock writeLock = lock.writeLock();
-                            if (writeLock.tryLock()) {
-                                try {
-                                    if (advertTimeStamp == 0) {
-                                        Log.d(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
-                                        toggleMute(true);
-                                        runUnmuter();
-                                    } else {
-                                        Log.d(TAG, "checkAndHandleAdEvt: Ignored ad event");
-                                    }
-                                    advertTimeStamp = System.currentTimeMillis();
-                                } finally {
-                                    writeLock.unlock();
-                                }
-                            }
-                        });
+                Lock writeLock = lock.writeLock();
+                if (writeLock.tryLock()) {
+                    try {
+                        if (advertTimeStamp == 0) {
+                            Log.d(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
+                            toggleMute(true);
+                            runUnmuter();
+                        } else {
+                            Log.d(TAG, "checkAndHandleAdEvt: Ignored ad event");
+                        }
+                        advertTimeStamp = System.currentTimeMillis();
+                    } finally {
+                        writeLock.unlock();
+                    }
+                }
             }
         }
     }
