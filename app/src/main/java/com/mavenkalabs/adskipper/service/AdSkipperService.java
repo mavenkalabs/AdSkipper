@@ -17,17 +17,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class AdSkipperService extends AccessibilityService  {
-    private long advertTimeStamp = 0;
-
     private long skipAdClickTimestamp = 0;
-
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private boolean muteAds = false;
+
+    private final AtomicBoolean adInProgress = new AtomicBoolean(false);
+    private Timer unmuter = null;
 
     private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
 
@@ -40,16 +38,21 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
-    private static final long QUIET_INTERVAL = 500;
+    private static final long QUIET_INTERVAL = 1000;
 
     private static final String TAG = AdSkipperService.class.getName();
 
+
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        if (muteAds) {
-            checkAndHandleAdEvt(event);
+        try {
+            if (muteAds) {
+                checkAndHandleAdEvt(event);
+            }
+            checkAndHandleSkipEvt(event);
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error", e);
         }
-        checkAndHandleSkipEvt(event);
     }
 
     private void checkAndHandleAdEvt(AccessibilityEvent event) {
@@ -65,28 +68,18 @@ public class AdSkipperService extends AccessibilityService  {
             }
 
             if (!nodes.isEmpty()) {
-                Lock writeLock = lock.writeLock();
-                if (writeLock.tryLock()) {
-                    try {
-                        if (advertTimeStamp == 0) {
-                            Log.d(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
-                            toggleMute(true);
-                            runUnmuter();
-                        } else {
-                            Log.d(TAG, "checkAndHandleAdEvt: Ignored ad event");
-                        }
-                        advertTimeStamp = System.currentTimeMillis();
-                    } finally {
-                        writeLock.unlock();
-                    }
+                if (adInProgress.compareAndSet(false, true)) {
+                    toggleMute(true);
+                    Log.d(TAG, "checkAndHandleAdEvt: Ad detected");
                 }
+
+                updateUnmuter();
             }
         }
     }
 
     private void checkAndHandleSkipEvt(AccessibilityEvent event) {
         if ((System.currentTimeMillis() - skipAdClickTimestamp) < QUIET_INTERVAL) {
-            Log.d(TAG, "checkAndHandleSkipEvt: ignored skip event");
             return;
         }
 
@@ -107,9 +100,12 @@ public class AdSkipperService extends AccessibilityService  {
                         .filter(AccessibilityNodeInfo::isEnabled)
                         .findFirst()
                         .ifPresent(accessibilityNodeInfo -> {
-                            Log.d(TAG, "checkAndHandleSkipEvt: Skipped ad");
                             accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            if (muteAds) {
+                                toggleMute(false);
+                            }
                             skipAdClickTimestamp = System.currentTimeMillis();
+                            Log.d(TAG, "checkAndHandleSkipEvt: Skipped ad");
                         });
             }
         }
@@ -122,19 +118,22 @@ public class AdSkipperService extends AccessibilityService  {
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,
                     mute ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE, 0);
         }
+        if (mute) {
+            Log.d(TAG, "Toggling mute to true");
+        } else {
+            Log.d(TAG, "Toggling mute to false");
+        }
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         toggleMute(false);
-        advertTimeStamp = 0;
         return true;
     }
 
     @Override
     public void onInterrupt() {
         toggleMute(false);
-        advertTimeStamp = 0;
     }
 
     @Override
@@ -155,41 +154,20 @@ public class AdSkipperService extends AccessibilityService  {
         listenerRef.set(listener);
     }
 
-    private void runUnmuter() {
-        final Timer timer = new Timer(true);
-        timer.schedule(new TimerTask() {
-                           @Override
-                           public void run() {
-                               Log.d(TAG, "Unmuter running");
-                               Lock readLock = lock.readLock();
-                               long lastOccurrence;
-                               try {
-                                   readLock.lock();
-                                   lastOccurrence = advertTimeStamp;
-                               } finally {
-                                   readLock.unlock();
-                               }
+    private void updateUnmuter() {
+        if (unmuter != null) {
+            unmuter.cancel();
+        }
 
-                               if (lastOccurrence > 0) {
-                                   long currentTimeStamp = System.currentTimeMillis();
-                                   if ((currentTimeStamp - lastOccurrence) >= QUIET_INTERVAL) {
-                                       Lock writeLock = lock.writeLock();
-                                       if (writeLock.tryLock()) {
-                                           try {
-                                               Log.d(TAG, "Unmuter is unmuting and then dying");
-                                               toggleMute(false);
-
-                                               advertTimeStamp = 0;
-                                               timer.cancel();
-                                           } finally {
-                                            writeLock.unlock();
-                                           }
-                                       }
-                                   }
-                               }
-                           }
-                       },
-                QUIET_INTERVAL,
+        unmuter = new Timer(true);
+        unmuter.schedule(new TimerTask() {
+                             @Override
+                             public void run() {
+                                 toggleMute(false);
+                                 adInProgress.compareAndSet(true, false);
+                                 Log.d(TAG, "Unmuter task executed");
+                             }
+                         },
                 QUIET_INTERVAL);
     }
 }
