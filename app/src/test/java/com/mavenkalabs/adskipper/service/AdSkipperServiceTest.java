@@ -73,7 +73,8 @@ public class AdSkipperServiceTest {
         doReturn(sharedPreferencesMock).when(contextMock).getSharedPreferences(anyString(), anyInt());
         when(sharedPreferencesMock.getBoolean(anyString(), anyBoolean())).thenReturn(true);
 
-        when(eventMock.getSource()).thenReturn(nodeInfoMock);
+        doReturn(nodeInfoMock).when(service).getRootInActiveWindow();
+        //when(eventMock.getSource()).thenReturn(nodeInfoMock);
         when(eventMock.getPackageName()).thenReturn(YT_PKG_NAME);
         when(nodeInfoMock.isClickable()).thenReturn(false);
         when(nodeInfoMock.isVisibleToUser()).thenReturn(false);
@@ -110,7 +111,7 @@ public class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock);
 
-        verify(audioManagerMock, never())
+        verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, times(1))
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
@@ -167,7 +168,7 @@ public class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock);
 
-        verify(audioManagerMock, never())
+        verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, times(1))
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
@@ -189,7 +190,7 @@ public class AdSkipperServiceTest {
     }
 
     @Test
-    public void verifyEvtHandlingWithMultipleEvents() throws InterruptedException {
+    public void verifyEvtHandlingWithMultipleEvents() {
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
                 .thenReturn(List.of(nodeInfoMock));
 
@@ -225,11 +226,9 @@ public class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock);
 
-        Thread.sleep(2000);
-
-        verify(audioManagerMock, times(1))
+        verify(audioManagerMock, times(2))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_MUTE), eq(0));
-        verify(audioManagerMock, never())
+        verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
         verify(nodeInfoMock, never())
                 .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));

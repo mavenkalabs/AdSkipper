@@ -15,19 +15,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class AdSkipperService extends AccessibilityService  {
-    private long advertTimeStamp = 0;
-
-    private long skipAdClickTimestamp = 0;
-
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private boolean muteAds = false;
+
+    private boolean adInProgress = false;
+
+    private long lastClickTimestamp = 0L;
 
     private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
 
@@ -40,81 +35,63 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
-    private static final long QUIET_INTERVAL = 1000;
-
     private static final String TAG = AdSkipperService.class.getName();
+
+    private static final long QUIET_INTERVAL = 1000;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        if (muteAds) {
-            checkAndHandleAdEvt(event);
-        }
-        checkAndHandleSkipEvt(event);
-    }
+        try {
+            final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
+            final AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+            if (rootNode != null && PKG_TO_ADVERT_ID_MAP.containsKey(eventPkgName)) {
+                List<AccessibilityNodeInfo> foundNodes = Collections.emptyList();
+                for (String viewId : Objects.requireNonNull(PKG_TO_ADVERT_ID_MAP.get(eventPkgName))) {
+                    foundNodes =
+                            rootNode.findAccessibilityNodeInfosByViewId(
+                                    String.join("", eventPkgName, ":id/", viewId));
+                    if (foundNodes != null && !foundNodes.isEmpty()) {
+                        if (muteAds && !adInProgress) {
+                            toggleMute(true);
+                            adInProgress = true;
+                            Log.d(TAG, "onAccessibilityEvent: Detected ad");
+                        }
+                        break;
+                    }
+                }
 
-    private void checkAndHandleAdEvt(AccessibilityEvent event) {
-        final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
-        final AccessibilityNodeInfo eventSource = event.getSource();
-        if (eventSource != null && PKG_TO_ADVERT_ID_MAP.containsKey(eventPkgName)) {
-            List<AccessibilityNodeInfo> nodes = Collections.emptyList();
-            for (String viewId : Objects.requireNonNull(PKG_TO_ADVERT_ID_MAP.get(eventPkgName))) {
-                nodes =
-                        eventSource.findAccessibilityNodeInfosByViewId(
-                                String.join("", eventPkgName, ":id/", viewId));
-                if (!nodes.isEmpty()) break;
+                if (muteAds && (foundNodes == null || foundNodes.isEmpty())) {
+                    if (adInProgress) {
+                        toggleMute(false);
+                        adInProgress = false;
+                    }
+                }
             }
 
-            if (!nodes.isEmpty()) {
-                nodes.stream()
-                        .findFirst().ifPresent(node -> {
-                            Lock writeLock = lock.writeLock();
-                            if (writeLock.tryLock()) {
-                                try {
-                                    if (advertTimeStamp == 0) {
-                                        Log.d(TAG, "checkAndHandleAdEvt: Ad detected and unmuter started");
-                                        toggleMute(true);
-                                        runUnmuter();
-                                    } else {
-                                        Log.d(TAG, "checkAndHandleAdEvt: Ignored ad event");
-                                    }
-                                    advertTimeStamp = System.currentTimeMillis();
-                                } finally {
-                                    writeLock.unlock();
-                                }
-                            }
-                        });
-            }
-        }
-    }
+            if ((System.currentTimeMillis() - lastClickTimestamp) > QUIET_INTERVAL &&
+                    rootNode != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
+                for (String viewId : Objects.requireNonNull(PKG_TO_SKIP_ID_MAP.get(eventPkgName))) {
+                    List<AccessibilityNodeInfo> foundNodes =
+                            rootNode.findAccessibilityNodeInfosByViewId(
+                                    String.join("", eventPkgName, ":id/", viewId));
+                    if (foundNodes != null && !foundNodes.isEmpty()) {
+                        foundNodes.stream()
+                                .filter(AccessibilityNodeInfo::isClickable)
+                                .filter(AccessibilityNodeInfo::isVisibleToUser)
+                                .filter(AccessibilityNodeInfo::isEnabled)
+                                .findFirst()
+                                .ifPresent(accessibilityNodeInfo -> {
+                                    accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    lastClickTimestamp = System.currentTimeMillis();
+                                    Log.d(TAG, "onAccessibilityEvent: Skipped ad");
+                                });
 
-    private void checkAndHandleSkipEvt(AccessibilityEvent event) {
-        if ((System.currentTimeMillis() - skipAdClickTimestamp) < QUIET_INTERVAL) {
-            Log.d(TAG, "checkAndHandleSkipEvt: ignored skip event");
-            return;
-        }
-
-        final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
-        final AccessibilityNodeInfo eventSource = event.getSource();
-        if (eventSource != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
-            List<AccessibilityNodeInfo> nodes = Collections.emptyList();
-            for (String viewId : Objects.requireNonNull(PKG_TO_SKIP_ID_MAP.get(eventPkgName))) {
-                nodes =
-                        eventSource.findAccessibilityNodeInfosByViewId(
-                                String.join("", eventPkgName, ":id/", viewId));
-                if (!nodes.isEmpty()) break;
+                        break;
+                    }
+                }
             }
-            if (!nodes.isEmpty()) {
-                nodes.stream()
-                        .filter(AccessibilityNodeInfo::isClickable)
-                        .filter(AccessibilityNodeInfo::isVisibleToUser)
-                        .filter(AccessibilityNodeInfo::isEnabled)
-                        .findFirst()
-                        .ifPresent(accessibilityNodeInfo -> {
-                            Log.d(TAG, "checkAndHandleSkipEvt: Skipped ad");
-                            accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                            skipAdClickTimestamp = System.currentTimeMillis();
-                        });
-            }
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error", e);
         }
     }
 
@@ -125,19 +102,22 @@ public class AdSkipperService extends AccessibilityService  {
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,
                     mute ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE, 0);
         }
+        if (mute) {
+            Log.d(TAG, "Toggling mute to true");
+        } else {
+            Log.d(TAG, "Toggling mute to false");
+        }
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         toggleMute(false);
-        advertTimeStamp = 0;
         return true;
     }
 
     @Override
     public void onInterrupt() {
         toggleMute(false);
-        advertTimeStamp = 0;
     }
 
     @Override
@@ -156,43 +136,5 @@ public class AdSkipperService extends AccessibilityService  {
             }
         });
         listenerRef.set(listener);
-    }
-
-    private void runUnmuter() {
-        final Timer timer = new Timer(true);
-        timer.schedule(new TimerTask() {
-                           @Override
-                           public void run() {
-                               Log.d(TAG, "Unmuter running");
-                               Lock readLock = lock.readLock();
-                               long lastOccurrence;
-                               try {
-                                   readLock.lock();
-                                   lastOccurrence = advertTimeStamp;
-                               } finally {
-                                   readLock.unlock();
-                               }
-
-                               if (lastOccurrence > 0) {
-                                   long currentTimeStamp = System.currentTimeMillis();
-                                   if ((currentTimeStamp - lastOccurrence) >= QUIET_INTERVAL) {
-                                       Lock writeLock = lock.writeLock();
-                                       if (writeLock.tryLock()) {
-                                           try {
-                                               Log.d(TAG, "Unmuter is unmuting and then dying");
-                                               toggleMute(false);
-
-                                               advertTimeStamp = 0;
-                                               timer.cancel();
-                                           } finally {
-                                            writeLock.unlock();
-                                           }
-                                       }
-                                   }
-                               }
-                           }
-                       },
-                QUIET_INTERVAL,
-                QUIET_INTERVAL);
     }
 }
