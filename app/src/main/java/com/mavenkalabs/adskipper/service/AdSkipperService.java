@@ -27,11 +27,11 @@ public class AdSkipperService extends AccessibilityService  {
     private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
 
     private static final Map<String, List<String>> PKG_TO_SKIP_ID_MAP = Map.of(
-            "com.google.android.youtube", List.of("skip_ad_button", "action"),
+            "com.google.android.youtube", List.of("skip_ad_button", "action", "modern_miniplayer_skip_ad_button"),
             "com.google.android.apps.youtube.music", List.of("skip_ad_button", "snackbar_action")
     );
     private static final Map<String, List<String>> PKG_TO_ADVERT_ID_MAP = Map.of(
-            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text"),
+            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text", "modern_miniplayer_ad_badge"),
             "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
@@ -81,6 +81,7 @@ public class AdSkipperService extends AccessibilityService  {
                                 .filter(AccessibilityNodeInfo::isEnabled)
                                 .findFirst()
                                 .ifPresent(accessibilityNodeInfo -> {
+                                    accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
                                     accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     lastClickTimestamp = System.currentTimeMillis();
                                     Log.d(TAG, "onAccessibilityEvent: Skipped ad");
