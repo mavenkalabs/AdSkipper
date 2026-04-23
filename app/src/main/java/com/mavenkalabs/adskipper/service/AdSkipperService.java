@@ -31,7 +31,7 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.apps.youtube.music", List.of("skip_ad_button", "snackbar_action")
     );
     private static final Map<String, List<String>> PKG_TO_ADVERT_ID_MAP = Map.of(
-            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text", "modern_miniplayer_ad_badge"),
+            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text", "modern_miniplayer_ad_badge", "ad_badge"),
             "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
@@ -77,11 +77,8 @@ public class AdSkipperService extends AccessibilityService  {
                     if (foundNodes != null && !foundNodes.isEmpty()) {
                         foundNodes.stream()
                                 .filter(AccessibilityNodeInfo::isClickable)
-                                .filter(AccessibilityNodeInfo::isVisibleToUser)
-                                .filter(AccessibilityNodeInfo::isEnabled)
                                 .findFirst()
                                 .ifPresent(accessibilityNodeInfo -> {
-                                    accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
                                     accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     lastClickTimestamp = System.currentTimeMillis();
                                     Log.d(TAG, "onAccessibilityEvent: Skipped ad");
