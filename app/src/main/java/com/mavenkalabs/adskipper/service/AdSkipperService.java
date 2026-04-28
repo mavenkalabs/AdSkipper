@@ -63,12 +63,18 @@ public class AdSkipperService extends AccessibilityService  {
                         mustExistViewIds.add(viewId);
                     }
 
+                    final List<AccessibilityNodeInfo> foundNodes = new ArrayList<>();
                     conditionSatisfied =  mustExistViewIds.stream().allMatch(s -> {
                         List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
                                 String.join("", eventPkgName, ":id/", s));
-                        return (nodes != null && !nodes.isEmpty());
+                        boolean found =  (nodes != null && !nodes.isEmpty());
+                        if (found) {
+                            foundNodes.addAll(nodes);
+                        }
+
+                        return found;
                     });
-                    if (conditionSatisfied) {
+                    if (conditionSatisfied && !mustNotExistViewIds.isEmpty()) {
                         conditionSatisfied = mustNotExistViewIds.stream().allMatch(s -> {
                             List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
                                     String.join("", eventPkgName, ":id/", s));
@@ -95,15 +101,47 @@ public class AdSkipperService extends AccessibilityService  {
 
             if ((System.currentTimeMillis() - lastClickTimestamp) > QUIET_INTERVAL &&
                     rootNode != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
+                boolean conditionSatisfied = false;
                 for (String viewId : Objects.requireNonNull(PKG_TO_SKIP_ID_MAP.get(eventPkgName))) {
-                    List<AccessibilityNodeInfo> foundNodes =
-                            rootNode.findAccessibilityNodeInfosByViewId(
-                                    String.join("", eventPkgName, ":id/", viewId));
-                    if (foundNodes != null && !foundNodes.isEmpty()) {
+                    List<String> mustExistViewIds = new ArrayList<>();
+                    List<String> mustNotExistViewIds = new ArrayList<>();
+
+                    if (viewId.contains("&")) {
+                        String[] viewIdArr = viewId.split("&");
+                        Arrays.stream(viewIdArr).forEach(s -> {
+                            if (s.startsWith("!")) {
+                                mustNotExistViewIds.add(s.substring(1));
+                            } else {
+                                mustExistViewIds.add(s);
+                            }
+                        });
+                    } else {
+                        mustExistViewIds.add(viewId);
+                    }
+
+                    final List<AccessibilityNodeInfo> foundNodes = new ArrayList<>();
+                    conditionSatisfied =  mustExistViewIds.stream().allMatch(s -> {
+                        List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
+                                String.join("", eventPkgName, ":id/", s));
+                        boolean found = (nodes != null && !nodes.isEmpty());
+                        if (found) {
+                            foundNodes.addAll(nodes);
+                        }
+                        return found;
+                    });
+                    if (conditionSatisfied && !mustNotExistViewIds.isEmpty()) {
+                        conditionSatisfied = mustNotExistViewIds.stream().allMatch(s -> {
+                            List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
+                                    String.join("", eventPkgName, ":id/", s));
+                            return (nodes == null || nodes.isEmpty());
+                        });
+                    }
+                    if (conditionSatisfied && !foundNodes.isEmpty()) {
                         foundNodes.stream()
                                 .filter(AccessibilityNodeInfo::isClickable)
                                 .findFirst()
                                 .ifPresent(accessibilityNodeInfo -> {
+                                    accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
                                     accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                     lastClickTimestamp = System.currentTimeMillis();
                                     Log.d(TAG, "onAccessibilityEvent: Skipped ad");
