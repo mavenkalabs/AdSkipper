@@ -11,7 +11,8 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import com.mavenkalabs.adskipper.ServiceEnabledFragment;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,7 +32,7 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.apps.youtube.music", List.of("skip_ad_button", "snackbar_action")
     );
     private static final Map<String, List<String>> PKG_TO_ADVERT_ID_MAP = Map.of(
-            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text", "modern_miniplayer_ad_badge", "ad_badge"),
+            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text", "sponsored_gradient_view", "ad_badge&fullscreen_engagement_panel_holder"),
             "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
@@ -45,12 +46,36 @@ public class AdSkipperService extends AccessibilityService  {
             final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
             final AccessibilityNodeInfo rootNode = getRootInActiveWindow();
             if (rootNode != null && PKG_TO_ADVERT_ID_MAP.containsKey(eventPkgName)) {
-                List<AccessibilityNodeInfo> foundNodes = Collections.emptyList();
+                boolean conditionSatisfied = false;
                 for (String viewId : Objects.requireNonNull(PKG_TO_ADVERT_ID_MAP.get(eventPkgName))) {
-                    foundNodes =
-                            rootNode.findAccessibilityNodeInfosByViewId(
-                                    String.join("", eventPkgName, ":id/", viewId));
-                    if (foundNodes != null && !foundNodes.isEmpty()) {
+                    List<String> mustExistViewIds = new ArrayList<>();
+                    List<String> mustNotExistViewIds = new ArrayList<>();
+                    if (viewId.contains("&")) {
+                        String[] viewIdArr = viewId.split("&");
+                        Arrays.stream(viewIdArr).forEach(s -> {
+                           if (s.startsWith("!")) {
+                               mustNotExistViewIds.add(s.substring(1));
+                           } else {
+                               mustExistViewIds.add(s);
+                           }
+                        });
+                    } else {
+                        mustExistViewIds.add(viewId);
+                    }
+
+                    conditionSatisfied =  mustExistViewIds.stream().allMatch(s -> {
+                        List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
+                                String.join("", eventPkgName, ":id/", s));
+                        return (nodes != null && !nodes.isEmpty());
+                    });
+                    if (conditionSatisfied) {
+                        conditionSatisfied = mustNotExistViewIds.stream().allMatch(s -> {
+                            List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
+                                    String.join("", eventPkgName, ":id/", s));
+                            return (nodes == null || nodes.isEmpty());
+                        });
+                    }
+                    if (conditionSatisfied) {
                         if (muteAds && !adInProgress) {
                             toggleMute(true);
                             adInProgress = true;
@@ -60,7 +85,7 @@ public class AdSkipperService extends AccessibilityService  {
                     }
                 }
 
-                if (muteAds && (foundNodes == null || foundNodes.isEmpty())) {
+                if (muteAds && !conditionSatisfied) {
                     if (adInProgress) {
                         toggleMute(false);
                         adInProgress = false;
