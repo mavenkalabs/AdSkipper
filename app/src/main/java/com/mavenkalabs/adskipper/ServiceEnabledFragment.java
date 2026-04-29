@@ -1,8 +1,6 @@
 package com.mavenkalabs.adskipper;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -20,8 +18,6 @@ import com.mavenkalabs.adskipper.service.AdSkipperService;
 import java.util.Arrays;
 
 public class ServiceEnabledFragment extends Fragment {
-
-    public static final String MUTE_ADS_PREF = "mute_ads";
     private FragmentServiceEnabledBinding binding;
 
     @Override
@@ -51,20 +47,6 @@ public class ServiceEnabledFragment extends Fragment {
         binding.buttonGotoA11ySettings.setOnClickListener((v) -> {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);
-        });
-
-        final SharedPreferences preferences = requireContext().getSharedPreferences(
-                requireContext().getPackageName() + "_preferences",
-                Context.MODE_PRIVATE);
-        if (!preferences.contains(MUTE_ADS_PREF)) {
-            preferences.edit().putBoolean(MUTE_ADS_PREF, true).apply();
-        }
-
-        binding.checkboxMuteAds.setChecked(
-                preferences.getBoolean(MUTE_ADS_PREF, false));
-
-        binding.checkboxMuteAds.setOnCheckedChangeListener((v, isChecked) -> {
-            preferences.edit().putBoolean(MUTE_ADS_PREF, isChecked).apply();
         });
     }
 

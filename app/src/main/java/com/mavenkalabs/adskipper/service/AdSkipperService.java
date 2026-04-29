@@ -1,7 +1,6 @@
 package com.mavenkalabs.adskipper.service;
 
 import android.accessibilityservice.AccessibilityService;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
@@ -9,7 +8,7 @@ import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import com.mavenkalabs.adskipper.ServiceEnabledFragment;
+import androidx.preference.PreferenceManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +18,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class AdSkipperService extends AccessibilityService  {
+    private static final String MUTE_ADS_PREF = "mute_ads";
+
     private boolean muteAds = false;
 
     private boolean adInProgress = false;
@@ -101,7 +102,6 @@ public class AdSkipperService extends AccessibilityService  {
 
             if ((System.currentTimeMillis() - lastClickTimestamp) > QUIET_INTERVAL &&
                     rootNode != null && PKG_TO_SKIP_ID_MAP.containsKey(eventPkgName)) {
-                boolean conditionSatisfied = false;
                 for (String viewId : Objects.requireNonNull(PKG_TO_SKIP_ID_MAP.get(eventPkgName))) {
                     List<String> mustExistViewIds = new ArrayList<>();
                     List<String> mustNotExistViewIds = new ArrayList<>();
@@ -120,7 +120,7 @@ public class AdSkipperService extends AccessibilityService  {
                     }
 
                     final List<AccessibilityNodeInfo> foundNodes = new ArrayList<>();
-                    conditionSatisfied =  mustExistViewIds.stream().allMatch(s -> {
+                    boolean conditionSatisfied =  mustExistViewIds.stream().allMatch(s -> {
                         List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
                                 String.join("", eventPkgName, ":id/", s));
                         boolean found = (nodes != null && !nodes.isEmpty());
@@ -183,15 +183,13 @@ public class AdSkipperService extends AccessibilityService  {
 
     @Override
     protected void onServiceConnected() {
-        SharedPreferences prefs = getApplicationContext().getSharedPreferences(
-                getApplicationContext().getPackageName() + "_preferences",
-                Context.MODE_PRIVATE);
-        muteAds = prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        muteAds = prefs.getBoolean(MUTE_ADS_PREF, false);
         SharedPreferences.OnSharedPreferenceChangeListener listener;
         prefs.registerOnSharedPreferenceChangeListener(listener = (p, key) -> {
             Log.d(TAG, "onServiceConnected: pref changed " + key);
 
-            if (Objects.equals(key, ServiceEnabledFragment.MUTE_ADS_PREF)) {
+            if (Objects.equals(key, MUTE_ADS_PREF)) {
                 muteAds = p.getBoolean(key, false);
                 Log.d(TAG, "onServiceConnected: muteAds now " + muteAds);
             }
