@@ -1,10 +1,14 @@
 package com.mavenkalabs.adskipper.service;
 
 import android.accessibilityservice.AccessibilityService;
+import android.accessibilityservice.GestureDescription;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Path;
+import android.graphics.Rect;
 import android.media.AudioManager;
 import android.util.Log;
+import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
@@ -18,7 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class AdSkipperService extends AccessibilityService  {
-    private static final String MUTE_ADS_PREF = "mute_ads";
+    public static final String MUTE_ADS_PREF = "mute_ads";
 
     private boolean muteAds = false;
 
@@ -141,8 +145,7 @@ public class AdSkipperService extends AccessibilityService  {
                                 .filter(AccessibilityNodeInfo::isClickable)
                                 .findFirst()
                                 .ifPresent(accessibilityNodeInfo -> {
-                                    accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
-                                    accessibilityNodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                    tap(accessibilityNodeInfo);
                                     lastClickTimestamp = System.currentTimeMillis();
                                     Log.d(TAG, "onAccessibilityEvent: Skipped ad");
                                 });
@@ -154,6 +157,19 @@ public class AdSkipperService extends AccessibilityService  {
         } catch (Exception e) {
             Log.e(TAG, "Unexpected error", e);
         }
+    }
+
+    private void tap(AccessibilityNodeInfo node) {
+        Rect nodeBounds = new Rect();
+        node.getBoundsInScreen(nodeBounds);
+        Path tapPath = new Path();
+        tapPath.moveTo(nodeBounds.centerX(), nodeBounds.centerY());
+        GestureDescription.StrokeDescription tapStroke =
+                new GestureDescription.StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout());
+
+        GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
+        gestureBuilder.addStroke(tapStroke);
+        dispatchGesture(gestureBuilder.build(), null, null);
     }
 
     private void toggleMute(boolean mute) {

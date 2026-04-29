@@ -1,6 +1,7 @@
 package com.mavenkalabs.adskipper;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -11,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.preference.PreferenceManager;
 
 import com.mavenkalabs.adskipper.databinding.FragmentServiceEnabledBinding;
 import com.mavenkalabs.adskipper.service.AdSkipperService;
@@ -48,6 +50,11 @@ public class ServiceEnabledFragment extends Fragment {
             Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);
         });
+
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        if (!prefs.contains(AdSkipperService.MUTE_ADS_PREF)) {
+            prefs.edit().putBoolean(AdSkipperService.MUTE_ADS_PREF, true).apply();
+        }
     }
 
     @Override

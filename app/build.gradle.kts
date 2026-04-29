@@ -11,8 +11,8 @@ android {
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
         targetSdk = 36
-        versionCode = 17
-        versionName = "1.0.17"
+        versionCode = 18
+        versionName = "1.0.18"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -23,6 +23,9 @@ android {
     }
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        unitTests {
+            isReturnDefaultValues = true
+        }
     }
 
     buildTypes {

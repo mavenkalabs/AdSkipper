@@ -5,4 +5,5 @@
     android:accessibilityFlags="flagReportViewIds"
     android:packageNames="com.google.android.youtube,com.google.android.apps.youtube.music"
     android:settingsActivity="com.mavenkalabs.adskipper.SettingsActivity"
+    android:canPerformGestures="true"
     android:canRetrieveWindowContent="true" />
