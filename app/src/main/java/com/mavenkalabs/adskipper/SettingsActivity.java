@@ -1,12 +1,16 @@
 package com.mavenkalabs.adskipper;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+
+import com.mavenkalabs.adskipper.service.AdSkipperService;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -34,6 +38,14 @@ public class SettingsActivity extends AppCompatActivity {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.preferences, rootKey);
+
+            // not available for old devices since the log capture needs permission request etc
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                Preference preference =  findPreference(AdSkipperService.CAPTURE_LOGS_PREF);
+                if (preference != null) {
+                    getPreferenceScreen().removePreference(preference);
+                }
+            }
         }
     }
 }

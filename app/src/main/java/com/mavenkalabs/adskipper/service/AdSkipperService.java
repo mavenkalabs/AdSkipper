@@ -7,12 +7,15 @@ import android.content.SharedPreferences;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.media.AudioManager;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.preference.PreferenceManager;
+
+import com.mavenkalabs.adskipper.util.LogWriter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +27,15 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AdSkipperService extends AccessibilityService  {
     public static final String MUTE_ADS_PREF = "mute_ads";
 
+    public static final String CAPTURE_LOGS_PREF = "enable_logging";
+
+    private static final int CAPTURE_LOGS_DURATION = 2*60*1000;
+
     private boolean muteAds = false;
+
+    private boolean captureLogs = false;
+
+    private LogWriter logWriter;
 
     private boolean adInProgress = false;
 
@@ -68,16 +79,10 @@ public class AdSkipperService extends AccessibilityService  {
                         mustExistViewIds.add(viewId);
                     }
 
-                    final List<AccessibilityNodeInfo> foundNodes = new ArrayList<>();
                     conditionSatisfied =  mustExistViewIds.stream().allMatch(s -> {
                         List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByViewId(
                                 String.join("", eventPkgName, ":id/", s));
-                        boolean found =  (nodes != null && !nodes.isEmpty());
-                        if (found) {
-                            foundNodes.addAll(nodes);
-                        }
-
-                        return found;
+                        return (nodes != null && !nodes.isEmpty());
                     });
                     if (conditionSatisfied && !mustNotExistViewIds.isEmpty()) {
                         conditionSatisfied = mustNotExistViewIds.stream().allMatch(s -> {
@@ -91,6 +96,12 @@ public class AdSkipperService extends AccessibilityService  {
                             toggleMute(true);
                             adInProgress = true;
                             Log.d(TAG, "onAccessibilityEvent: Detected ad");
+                            if (captureLogs) {
+                                if (logWriter == null) {
+                                    logWriter = new LogWriter(getApplicationContext());
+                                }
+                                logWriter.log(getRootInActiveWindow(), LogWriter.EventType.AD);
+                            }
                         }
                         break;
                     }
@@ -148,6 +159,12 @@ public class AdSkipperService extends AccessibilityService  {
                                     tap(accessibilityNodeInfo);
                                     lastClickTimestamp = System.currentTimeMillis();
                                     Log.d(TAG, "onAccessibilityEvent: Skipped ad");
+                                    if (captureLogs) {
+                                        if (logWriter == null) {
+                                            logWriter = new LogWriter(getApplicationContext());
+                                        }
+                                        logWriter.log(getRootInActiveWindow(), LogWriter.EventType.SKIP);
+                                    }
                                 });
 
                         break;
@@ -208,6 +225,28 @@ public class AdSkipperService extends AccessibilityService  {
             if (Objects.equals(key, MUTE_ADS_PREF)) {
                 muteAds = p.getBoolean(key, false);
                 Log.d(TAG, "onServiceConnected: muteAds now " + muteAds);
+            } else if (Objects.equals(key, CAPTURE_LOGS_PREF)) {
+                captureLogs = p.getBoolean(key, false);
+                if (captureLogs) {
+                    new CountDownTimer(CAPTURE_LOGS_DURATION, CAPTURE_LOGS_DURATION) {
+
+                        @Override
+                        public void onFinish() {
+                            p.edit().putBoolean(CAPTURE_LOGS_PREF, false).apply();
+                        }
+
+                        @Override
+                        public void onTick(long millisUntilFinished) {
+                            // do nothing
+                        }
+                    }.start();
+                } else {
+                    if (logWriter != null) {
+                        logWriter.close();
+                        logWriter = null;
+                    }
+                }
+                Log.d(TAG, "onServiceConnected: captureLogs now " + captureLogs);
             }
         });
         listenerRef.set(listener);

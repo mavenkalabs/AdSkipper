@@ -13,8 +13,8 @@
     <string name="disagree">Disagree</string>
     <string name="mute_ads">Mute Ads</string>
     <string name="mute_ads_desc">Mute volume on advertisements</string>
-    <string name="enable_logging">Capture Logs</string>
-    <string name="enable_logging_desc">Capture debug logs (affects performance)</string>
+    <string name="enable_logging">Capture logs for 2 minutes</string>
+    <string name="enable_logging_desc">Logging affects performance</string>
     <string name="tutorial">View short video on how to do this</string>
     <string name="title_activity_settings">Ad Skipper Settings</string>
 </resources>
