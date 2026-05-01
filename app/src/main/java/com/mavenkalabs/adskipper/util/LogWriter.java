@@ -44,7 +44,7 @@ public class LogWriter implements Closeable {
     }
 
     public void log(AccessibilityNodeInfo rootNode, EventType eventType) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && rootNode != null) {
             StringBuilder buffer = new StringBuilder();
             buffer.append(LocalDateTime.now().toString())
                     .append(",")
@@ -56,6 +56,7 @@ public class LogWriter implements Closeable {
                 executor.execute(() -> {
                     try {
                         out.write(buffer.toString().getBytes(StandardCharsets.UTF_8));
+                        out.flush();
                     } catch (IOException e) {
                         Log.e(TAG, "Error writing to log", e);
                     }
@@ -65,14 +66,16 @@ public class LogWriter implements Closeable {
     }
 
     private void logNode(AccessibilityNodeInfo node, StringBuilder sbuf, String prefix) {
-        if (node.getViewIdResourceName() != null) {
-            sbuf.append(prefix).append(node).append(System.lineSeparator());
-            prefix = prefix.concat(" ");
-        }
+        if (node != null) {
+            if (node.getViewIdResourceName() != null) {
+                sbuf.append(prefix).append(node).append(System.lineSeparator());
+                prefix = prefix.concat(" ");
+            }
 
-        int childCount = node.getChildCount();
-        for (int i = 0 ; i < childCount ; i++) {
-            logNode(node.getChild(i), sbuf, prefix);
+            int childCount = node.getChildCount();
+            for (int i = 0; i < childCount; i++) {
+                logNode(node.getChild(i), sbuf, prefix);
+            }
         }
     }
 

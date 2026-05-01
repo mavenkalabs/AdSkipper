@@ -7,7 +7,6 @@ import android.content.SharedPreferences;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.media.AudioManager;
-import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityEvent;
@@ -29,8 +28,6 @@ public class AdSkipperService extends AccessibilityService  {
 
     public static final String CAPTURE_LOGS_PREF = "enable_logging";
 
-    private static final int CAPTURE_LOGS_DURATION = 2*60*1000;
-
     private boolean muteAds = false;
 
     private boolean captureLogs = false;
@@ -48,7 +45,8 @@ public class AdSkipperService extends AccessibilityService  {
             "com.google.android.apps.youtube.music", List.of("skip_ad_button")
     );
     private static final Map<String, List<String>> PKG_TO_ADVERT_ID_MAP = Map.of(
-            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text", "sponsored_gradient_view", "ad_badge&fullscreen_engagement_panel_holder"),
+            "com.google.android.youtube", List.of("player_learn_more_button", "ad_progress_text",
+                    "modern_miniplayer_ad_badge", "ad_badge&!collapsible_ad_cta_overlay_container"),
             "com.google.android.apps.youtube.music", List.of("player_learn_more_button", "ad_progress_text")
     );
 
@@ -227,23 +225,11 @@ public class AdSkipperService extends AccessibilityService  {
                 Log.d(TAG, "onServiceConnected: muteAds now " + muteAds);
             } else if (Objects.equals(key, CAPTURE_LOGS_PREF)) {
                 captureLogs = p.getBoolean(key, false);
-                if (captureLogs) {
-                    new CountDownTimer(CAPTURE_LOGS_DURATION, CAPTURE_LOGS_DURATION) {
-
-                        @Override
-                        public void onFinish() {
-                            p.edit().putBoolean(CAPTURE_LOGS_PREF, false).apply();
-                        }
-
-                        @Override
-                        public void onTick(long millisUntilFinished) {
-                            // do nothing
-                        }
-                    }.start();
-                } else {
+                if (!captureLogs) {
                     if (logWriter != null) {
-                        logWriter.close();
+                        final LogWriter ref = logWriter;
                         logWriter = null;
+                        ref.close();
                     }
                 }
                 Log.d(TAG, "onServiceConnected: captureLogs now " + captureLogs);
