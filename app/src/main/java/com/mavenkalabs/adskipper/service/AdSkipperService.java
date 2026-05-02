@@ -175,16 +175,22 @@ public class AdSkipperService extends AccessibilityService  {
     }
 
     private void tap(AccessibilityNodeInfo node) {
-        Rect nodeBounds = new Rect();
-        node.getBoundsInScreen(nodeBounds);
-        Path tapPath = new Path();
-        tapPath.moveTo(nodeBounds.centerX(), nodeBounds.centerY());
-        GestureDescription.StrokeDescription tapStroke =
-                new GestureDescription.StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout());
+        //try click action first
+        boolean success = node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
 
-        GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
-        gestureBuilder.addStroke(tapStroke);
-        dispatchGesture(gestureBuilder.build(), null, null);
+        // execute gesture if click action doesn't succeed
+        if (!success) {
+            Rect nodeBounds = new Rect();
+            node.getBoundsInScreen(nodeBounds);
+            Path tapPath = new Path();
+            tapPath.moveTo(nodeBounds.centerX(), nodeBounds.centerY());
+            GestureDescription.StrokeDescription tapStroke =
+                    new GestureDescription.StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout());
+
+            GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
+            gestureBuilder.addStroke(tapStroke);
+            dispatchGesture(gestureBuilder.build(), null, null);
+        }
     }
 
     private void toggleMute(boolean mute) {
