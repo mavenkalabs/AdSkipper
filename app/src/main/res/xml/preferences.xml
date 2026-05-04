@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <SwitchPreferenceCompat
+        app:key="mute_ads"
+        app:title="@string/mute_ads"
+        app:summary="@string/mute_ads_desc"
+        app:defaultValue="true" />
+    <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="enable_logging"
+        android:title="@string/enable_logging"
+        android:summary="@string/enable_logging_desc"/>
+</PreferenceScreen>

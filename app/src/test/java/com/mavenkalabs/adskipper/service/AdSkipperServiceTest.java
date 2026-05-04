@@ -7,8 +7,6 @@ import android.media.AudioManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import com.mavenkalabs.adskipper.ServiceEnabledFragment;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -113,9 +112,9 @@ public class AdSkipperServiceTest {
 
         verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
-        verify(nodeInfoMock, times(1))
-                .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
+        verify(service, times(1)).dispatchGesture(any(), any(), any());
     }
+
     @Test()
     public void verifyEvtHandlingNullSource() {
         when(eventMock.getSource()).thenReturn(null);
@@ -170,8 +169,7 @@ public class AdSkipperServiceTest {
 
         verify(audioManagerMock, times(1))
                 .adjustStreamVolume(eq(AudioManager.STREAM_MUSIC), eq(AudioManager.ADJUST_UNMUTE), eq(0));
-        verify(nodeInfoMock, times(1))
-                .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
+        verify(service, times(1)).dispatchGesture(any(), any(), any());
     }
 
     @Test
@@ -206,8 +204,7 @@ public class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock);
 
-        verify(nodeInfoMock, times(1))
-                .performAction(eq(AccessibilityNodeInfo.ACTION_CLICK));
+        verify(service, times(1)).dispatchGesture(any(), any(), any());
 
         reset(nodeInfoMock);
         doReturn(false).when(audioManagerMock).isStreamMute(eq(AudioManager.STREAM_MUSIC));
@@ -239,8 +236,8 @@ public class AdSkipperServiceTest {
         verify(sharedPreferencesMock).registerOnSharedPreferenceChangeListener(
                 listenerArgumentCaptor.capture());
 
-        doReturn(false).when(sharedPreferencesMock).getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false);
-        listenerArgumentCaptor.getValue().onSharedPreferenceChanged(sharedPreferencesMock, ServiceEnabledFragment.MUTE_ADS_PREF);
+        doReturn(false).when(sharedPreferencesMock).getBoolean(AdSkipperService.MUTE_ADS_PREF, false);
+        listenerArgumentCaptor.getValue().onSharedPreferenceChanged(sharedPreferencesMock, AdSkipperService.MUTE_ADS_PREF);
 
         when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/ad_progress_text")))
                 .thenReturn(List.of(nodeInfoMock));

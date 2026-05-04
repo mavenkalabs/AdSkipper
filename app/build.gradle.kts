@@ -11,8 +11,8 @@ android {
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.0.15"
+        versionCode = 18
+        versionName = "1.0.18"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -23,6 +23,9 @@ android {
     }
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        unitTests {
+            isReturnDefaultValues = true
+        }
     }
 
     buildTypes {
@@ -48,12 +51,15 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.navigation:navigation-fragment:2.9.4")
-    implementation("androidx.navigation:navigation-ui:2.9.4")
-    implementation("androidx.annotation:annotation:1.9.1")
+    implementation("androidx.navigation:navigation-fragment:2.9.8")
+    implementation("androidx.navigation:navigation-ui:2.9.8")
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    implementation("androidx.annotation:annotation:1.10.0")
     implementation("com.android.support.test:runner:1.0.2")
+    implementation("androidx.preference:preference:1.2.1")
+    implementation("androidx.fragment:fragment:1.8.9")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.19.0")
+    testImplementation("org.mockito:mockito-core:5.23.0")
 
     // Core library
     androidTestImplementation("androidx.test:core:1.7.0")

@@ -1,17 +1,19 @@
 package com.mavenkalabs.adskipper;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.widget.Switch;
 import android.widget.VideoView;
 
+import androidx.preference.PreferenceManager;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
+
+import com.mavenkalabs.adskipper.service.AdSkipperService;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -94,24 +96,17 @@ public class MainActivityTests {
         found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.a11y_service_enabled_message))), 10000);
         assertTrue(found);
 
-        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(true)), 1000);
-        assertTrue(found);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        assertTrue(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false));
 
-        SharedPreferences prefs = getApplicationContext().getSharedPreferences(
-                getApplicationContext().getPackageName() + "_preferences",
-                Context.MODE_PRIVATE);
-        assertTrue(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
+        launchA11ySettings();
+        toggleMuteAdsSetting(false);
+        assertFalse(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, true));
 
-        uiDevice.findObject(By.text(getApplicationContext().getString(R.string.mute_ads))).click();
-        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(false)), 1000);
-        assertTrue(found);
-        assertFalse(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
-
-        uiDevice.findObject(By.text(getApplicationContext().getString(R.string.mute_ads))).click();
-        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads)).checked(true)), 1000);
-        assertTrue(found);
-        assertTrue(prefs.getBoolean(ServiceEnabledFragment.MUTE_ADS_PREF, false));
+        toggleMuteAdsSetting(true);
+        assertTrue(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false));
     }
+
     @Test
     public void verifyUiTutorial() {
         Intent activityIntent = new Intent(getApplicationContext(), MainActivity.class);
@@ -175,6 +170,45 @@ public class MainActivityTests {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
         getInstrumentation().getContext().startActivity(intent);
 
+        uiDevice.waitForWindowUpdate(null, TIMEOUT);
+    }
+
+    private void toggleMuteAdsSetting(boolean enable) {
+        // wait for it to show up
+        boolean found = uiDevice.wait(Until.hasObject(By.text(APP_NAME)), TIMEOUT);
+        assertTrue(found);
+
+        // open the Ad Skipper switch
+        uiDevice.findObject(By.text(APP_NAME)).click();
+
+        // wait for settings to show up
+        found = uiDevice.wait(Until.hasObject(By.text("Settings")), TIMEOUT);
+        assertTrue(found);
+
+        // open the settings activity
+        uiDevice.findObject(By.text("Settings")).click();
+
+        // wait for mute ads switch to show up
+        found = uiDevice.wait(Until.hasObject(By.text(getApplicationContext().getString(R.string.mute_ads))), TIMEOUT);
+        assertTrue(found);
+
+        // check if toggle state is different from desired state
+        // the first switch is the mute ads one
+        UiObject2 toggleButton = uiDevice.findObject(By.clazz(Switch.class));
+        boolean currentState = Objects.requireNonNull(toggleButton).isChecked();
+        if (currentState != enable) {
+            toggleButton.click();
+            if (enable) {
+                toggleButton = uiDevice.findObject(By.clazz(Switch.class));
+                assertTrue(Objects.requireNonNull(toggleButton).isChecked());
+            } else {
+                toggleButton = uiDevice.findObject(By.clazz(Switch.class));
+                assertFalse(Objects.requireNonNull(toggleButton).isChecked());
+            }
+        }
+        uiDevice.pressBack();
+        uiDevice.waitForWindowUpdate(null, TIMEOUT);
+        uiDevice.pressBack();
         uiDevice.waitForWindowUpdate(null, TIMEOUT);
     }
 

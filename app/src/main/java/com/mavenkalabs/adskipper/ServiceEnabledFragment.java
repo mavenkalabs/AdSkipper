@@ -1,6 +1,5 @@
 package com.mavenkalabs.adskipper;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -13,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.preference.PreferenceManager;
 
 import com.mavenkalabs.adskipper.databinding.FragmentServiceEnabledBinding;
 import com.mavenkalabs.adskipper.service.AdSkipperService;
@@ -20,8 +20,6 @@ import com.mavenkalabs.adskipper.service.AdSkipperService;
 import java.util.Arrays;
 
 public class ServiceEnabledFragment extends Fragment {
-
-    public static final String MUTE_ADS_PREF = "mute_ads";
     private FragmentServiceEnabledBinding binding;
 
     @Override
@@ -53,19 +51,10 @@ public class ServiceEnabledFragment extends Fragment {
             startActivity(intent);
         });
 
-        final SharedPreferences preferences = requireContext().getSharedPreferences(
-                requireContext().getPackageName() + "_preferences",
-                Context.MODE_PRIVATE);
-        if (!preferences.contains(MUTE_ADS_PREF)) {
-            preferences.edit().putBoolean(MUTE_ADS_PREF, true).apply();
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+        if (!prefs.contains(AdSkipperService.MUTE_ADS_PREF)) {
+            prefs.edit().putBoolean(AdSkipperService.MUTE_ADS_PREF, true).apply();
         }
-
-        binding.checkboxMuteAds.setChecked(
-                preferences.getBoolean(MUTE_ADS_PREF, false));
-
-        binding.checkboxMuteAds.setOnCheckedChangeListener((v, isChecked) -> {
-            preferences.edit().putBoolean(MUTE_ADS_PREF, isChecked).apply();
-        });
     }
 
     @Override

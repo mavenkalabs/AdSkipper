@@ -12,5 +12,9 @@
     <string name="agree">Agree</string>
     <string name="disagree">Disagree</string>
     <string name="mute_ads">Mute Ads</string>
+    <string name="mute_ads_desc">Mute volume on advertisements</string>
+    <string name="enable_logging">Capture logs</string>
+    <string name="enable_logging_desc">NOTE: this degrades performance</string>
     <string name="tutorial">View short video on how to do this</string>
+    <string name="title_activity_settings">Ad Skipper Settings</string>
 </resources>
