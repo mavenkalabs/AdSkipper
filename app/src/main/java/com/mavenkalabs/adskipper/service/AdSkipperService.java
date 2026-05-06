@@ -16,11 +16,14 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import androidx.preference.PreferenceManager;
 
 import com.mavenkalabs.adskipper.rules.BaseRule;
+import com.mavenkalabs.adskipper.rules.RuleConstants;
 import com.mavenkalabs.adskipper.rules.RuleResult;
 import com.mavenkalabs.adskipper.rules.RulesParser;
 import com.mavenkalabs.adskipper.util.ConfigReader;
 import com.mavenkalabs.adskipper.util.LogWriter;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +45,7 @@ public class AdSkipperService extends AccessibilityService  {
 
     private boolean adInProgress = false;
 
-    private long lastClickTimestamp = 0L;
+    private long lastUserClickTimestamp = 0L;
 
     private ConfigReader configReader;
 
@@ -54,21 +57,26 @@ public class AdSkipperService extends AccessibilityService  {
 
     private static final String TAG = AdSkipperService.class.getName();
 
-    private static final long QUIET_INTERVAL = 1000;
-
+    private static final long USER_CLICK_QUIET_INTERVAL = 10000;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         try {
             if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+                Log.d(TAG, "View click event received");
+                lastUserClickTimestamp = System.currentTimeMillis();
                 return;
             }
+
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put(RuleConstants.RULE_PARAM_QUIET_INTERVAL, USER_CLICK_QUIET_INTERVAL);
+            parameters.put(RuleConstants.RULE_PARAM_LAST_USER_CLICK_TS, lastUserClickTimestamp);
 
             final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
             final AccessibilityNodeInfo rootNode = getRootInActiveWindow();
             BaseRule currentMuteRules = packageMuteRules.get().get(eventPkgName);
             if (rootNode != null && currentMuteRules != null) {
-                boolean conditionSatisfied = currentMuteRules.apply(rootNode).isPassed();
+                boolean conditionSatisfied = currentMuteRules.apply(rootNode, parameters).isPassed();
                 if (conditionSatisfied) {
                     if (muteAds && !adInProgress) {
                         toggleMute(true);
@@ -92,9 +100,8 @@ public class AdSkipperService extends AccessibilityService  {
             }
 
             BaseRule currentClickRules = packageClickRules.get().get(eventPkgName);
-            if ((System.currentTimeMillis() - lastClickTimestamp) > QUIET_INTERVAL &&
-                    rootNode != null && currentClickRules != null) {
-                RuleResult result = currentClickRules.apply(rootNode);
+            if (rootNode != null && currentClickRules != null) {
+                RuleResult result = currentClickRules.apply(rootNode, parameters);
 
                 boolean conditionSatisfied =  result.isPassed();
                 List<AccessibilityNodeInfo> foundNodes = result.getFilteredNodes();
@@ -104,7 +111,6 @@ public class AdSkipperService extends AccessibilityService  {
                             .findFirst()
                             .ifPresent(accessibilityNodeInfo -> {
                                 tap(accessibilityNodeInfo);
-                                lastClickTimestamp = System.currentTimeMillis();
                                 Log.d(TAG, "onAccessibilityEvent: Skipped ad");
                                 if (captureLogs) {
                                     if (logWriter == null) {
@@ -181,7 +187,7 @@ public class AdSkipperService extends AccessibilityService  {
     @Override
     protected void onServiceConnected() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        muteAds = prefs.getBoolean(MUTE_ADS_PREF, false);
+        muteAds = prefs.getBoolean(MUTE_ADS_PREF, true);
         SharedPreferences.OnSharedPreferenceChangeListener listener;
         prefs.registerOnSharedPreferenceChangeListener(listener = (p, key) -> {
             Log.d(TAG, "onServiceConnected: pref changed " + key);
@@ -222,7 +228,6 @@ public class AdSkipperService extends AccessibilityService  {
                         map(s -> rulesParser.parse(s, "com.google.android.apps.youtube.music")).toArray(BaseRule[]::new))
         ));
 
-
         configReader = new ConfigReader(config -> {
             packageClickRules.set(config.getClickRules().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
@@ -235,8 +240,8 @@ public class AdSkipperService extends AccessibilityService  {
                             entry.getValue().stream().map(s -> rulesParser.parse(s, entry.getKey())).toArray(BaseRule[]::new))
             )));
 
-            AccessibilityServiceInfo serviceInfo = new AccessibilityServiceInfo();
-            Set<String> packages = config.getClickRules().keySet();
+            AccessibilityServiceInfo serviceInfo = getServiceInfo();
+            Set<String> packages = new HashSet<>(config.getClickRules().keySet());
             packages.addAll(config.getMuteRules().keySet());
             serviceInfo.packageNames = packages.toArray(new String[0]);
             setServiceInfo(serviceInfo);

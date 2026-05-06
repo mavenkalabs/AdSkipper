@@ -1,5 +1,7 @@
 package com.mavenkalabs.adskipper.util;
 
+import android.util.Log;
+
 import androidx.annotation.VisibleForTesting;
 
 import org.json.JSONArray;
@@ -21,11 +23,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ConfigReader implements AutoCloseable {
-    private static final String CONFIG_URL = "https://mavenkalabs.github.io/pubdocs/adskipper/config.json";
+    private static final String CONFIG_URL = "https://raw.githubusercontent.com/mavenkalabs/pubdocs/refs/heads/snackbaraction/adskipper/config.json";
     private static final String HTTP_RES_HEADER_ETAG = "Etag";
     private static final String HTTP_REQ_HEADER_ETAG = "If-None-Match";
     private static final String HTTP_REQ_METHOD = "GET";
     private static final int HTTP_RES_STATUS_OK = 200;
+    private static final String TAG = ConfigReader.class.getName();
 
     private final ScheduledExecutorService executorService;
     private final Consumer<Config> callback;
@@ -81,6 +84,7 @@ public class ConfigReader implements AutoCloseable {
         } catch (Throwable t) {
             // ignore
             // no callback happens
+            Log.e(TAG, t.getMessage(), t);
         }
     }
 
