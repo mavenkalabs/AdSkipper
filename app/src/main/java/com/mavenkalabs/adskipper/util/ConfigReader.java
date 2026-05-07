@@ -86,7 +86,6 @@ public class ConfigReader implements AutoCloseable {
         }
     }
 
-    @Override
     public void close() {
         executorService.close();
     }
