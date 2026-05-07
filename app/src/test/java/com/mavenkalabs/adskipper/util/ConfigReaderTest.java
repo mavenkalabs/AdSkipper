@@ -2,13 +2,16 @@ package com.mavenkalabs.adskipper.util;
 
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class ConfigReaderTest {
 
     @Test
     public void verifyConfigRetrieval() throws Exception {
-        /*final AtomicBoolean callbackInvoked = new AtomicBoolean();
+        final AtomicBoolean callbackInvoked = new AtomicBoolean();
         CountDownLatch latch = new CountDownLatch(1);
-        try (final ConfigReader ignored = new ConfigReader(config -> {
+        /*try (final ConfigReader ignored = new ConfigReader(config -> {
             callbackInvoked.set(true);
             latch.countDown();
         })){

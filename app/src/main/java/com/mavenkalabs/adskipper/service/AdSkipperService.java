@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.media.AudioManager;
-import android.util.Log;
 import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -19,8 +18,8 @@ import com.mavenkalabs.adskipper.rules.BaseRule;
 import com.mavenkalabs.adskipper.rules.RuleConstants;
 import com.mavenkalabs.adskipper.rules.RuleResult;
 import com.mavenkalabs.adskipper.rules.RulesParser;
+import com.mavenkalabs.adskipper.util.AppLog;
 import com.mavenkalabs.adskipper.util.ConfigReader;
-import com.mavenkalabs.adskipper.util.LogWriter;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,8 +40,6 @@ public class AdSkipperService extends AccessibilityService  {
     private boolean muteAds = false;
 
     private boolean captureLogs = false;
-
-    private LogWriter logWriter;
 
     private boolean adInProgress = false;
 
@@ -77,12 +74,9 @@ public class AdSkipperService extends AccessibilityService  {
                     if (muteAds && !adInProgress) {
                         toggleMute(true);
                         adInProgress = true;
-                        Log.d(TAG, "onAccessibilityEvent: Detected ad");
+                        AppLog.d(TAG, "onAccessibilityEvent: Detected ad");
                         if (captureLogs) {
-                            if (logWriter == null) {
-                                logWriter = new LogWriter(getApplicationContext());
-                            }
-                            logWriter.log(getRootInActiveWindow(), LogWriter.EventType.AD);
+                            AppLog.logAccessibilityEvent(getRootInActiveWindow(), AppLog.EventType.AD);
                         }
                     }
                 }
@@ -107,19 +101,16 @@ public class AdSkipperService extends AccessibilityService  {
                             .findFirst()
                             .ifPresent(accessibilityNodeInfo -> {
                                 tap(accessibilityNodeInfo);
-                                Log.d(TAG, "onAccessibilityEvent: Skipped ad");
+                                AppLog.d(TAG, "onAccessibilityEvent: Skipped ad");
                                 if (captureLogs) {
-                                    if (logWriter == null) {
-                                        logWriter = new LogWriter(getApplicationContext());
-                                    }
-                                    logWriter.log(getRootInActiveWindow(), LogWriter.EventType.SKIP);
+                                    AppLog.logAccessibilityEvent(getRootInActiveWindow(), AppLog.EventType.SKIP);
                                 }
                             });
                 }
 
             }
         } catch (Exception e) {
-            Log.e(TAG, "Unexpected error", e);
+            AppLog.e(TAG, "Unexpected error", e);
         }
     }
 
@@ -150,9 +141,9 @@ public class AdSkipperService extends AccessibilityService  {
                     mute ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE, 0);
         }
         if (mute) {
-            Log.d(TAG, "Toggling mute to true");
+            AppLog.d(TAG, "Toggling mute to true");
         } else {
-            Log.d(TAG, "Toggling mute to false");
+            AppLog.d(TAG, "Toggling mute to false");
         }
     }
 
@@ -175,32 +166,33 @@ public class AdSkipperService extends AccessibilityService  {
             try {
                 configReader.close();
             } catch (Exception e) {
-                Log.e(TAG, e.getMessage(), e);
+                AppLog.e(TAG, e.getMessage(), e);
             }
         }
     }
 
     @Override
     protected void onServiceConnected() {
+        AppLog.enable(null); // enable ordinary logging
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         muteAds = prefs.getBoolean(MUTE_ADS_PREF, true);
         SharedPreferences.OnSharedPreferenceChangeListener listener;
         prefs.registerOnSharedPreferenceChangeListener(listener = (p, key) -> {
-            Log.d(TAG, "onServiceConnected: pref changed " + key);
+            AppLog.d(TAG, "onServiceConnected: pref changed {0}", key);
 
             if (Objects.equals(key, MUTE_ADS_PREF)) {
                 muteAds = p.getBoolean(key, false);
-                Log.d(TAG, "onServiceConnected: muteAds now " + muteAds);
+                AppLog.d(TAG, "onServiceConnected: muteAds now {0}", muteAds);
             } else if (Objects.equals(key, CAPTURE_LOGS_PREF)) {
                 captureLogs = p.getBoolean(key, false);
                 if (!captureLogs) {
-                    if (logWriter != null) {
-                        final LogWriter ref = logWriter;
-                        logWriter = null;
-                        ref.close();
-                    }
+                    AppLog.disable();
+                    AppLog.enable(null); // enable ordinary logging
+                } else {
+                    AppLog.enable(getApplicationContext());
                 }
-                Log.d(TAG, "onServiceConnected: captureLogs now " + captureLogs);
+                AppLog.d(TAG, "onServiceConnected: captureLogs now {0}", captureLogs);
             }
         });
         listenerRef.set(listener);
@@ -242,9 +234,9 @@ public class AdSkipperService extends AccessibilityService  {
             serviceInfo.packageNames = packages.toArray(new String[0]);
             setServiceInfo(serviceInfo);
 
-            Log.d(TAG, "Click rules are:" + packageClickRules.get());
-            Log.d(TAG, "Mute rules are:" + packageMuteRules.get());
-            Log.d(TAG, "Packages are:" + Arrays.asList(serviceInfo.packageNames));
+            AppLog.d(TAG, "Click rules are: {0}", packageClickRules.get());
+            AppLog.d(TAG, "Mute rules are: {0}", packageMuteRules.get());
+            AppLog.d(TAG, "Packages are: {0}", Arrays.asList(serviceInfo.packageNames));
         });
     }
 }

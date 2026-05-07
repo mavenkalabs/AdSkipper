@@ -1,7 +1,5 @@
 package com.mavenkalabs.adskipper.util;
 
-import android.util.Log;
-
 import androidx.annotation.VisibleForTesting;
 
 import org.json.JSONArray;
@@ -84,7 +82,7 @@ public class ConfigReader implements AutoCloseable {
         } catch (Throwable t) {
             // ignore
             // no callback happens
-            Log.e(TAG, t.getMessage(), t);
+            AppLog.e(TAG, t.getMessage(), t);
         }
     }
 
