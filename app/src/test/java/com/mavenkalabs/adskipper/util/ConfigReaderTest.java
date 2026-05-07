@@ -23,7 +23,7 @@ public class ConfigReaderTest {
             });
         } finally {
             if (configReader != null) {
-                configReader.close();
+                //configReader.close();
             }
         }
         /*try (final ConfigReader ignored = new ConfigReader(config -> {
