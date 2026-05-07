@@ -11,6 +11,17 @@ public class ConfigReaderTest {
     public void verifyConfigRetrieval() throws Exception {
         final AtomicBoolean callbackInvoked = new AtomicBoolean();
         CountDownLatch latch = new CountDownLatch(1);
+        ConfigReader configReader = null;
+        try {
+            configReader = new ConfigReader(config -> {
+                callbackInvoked.set(true);
+                latch.countDown();
+            });
+        } finally {
+            if (configReader != null) {
+                configReader.close();
+            }
+        }
         /*try (final ConfigReader ignored = new ConfigReader(config -> {
             callbackInvoked.set(true);
             latch.countDown();
