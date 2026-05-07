@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class ConfigReaderTest {
 
@@ -13,9 +14,12 @@ public class ConfigReaderTest {
         CountDownLatch latch = new CountDownLatch(1);
         ConfigReader configReader = null;
         try {
-            configReader = new ConfigReader(config -> {
-                callbackInvoked.set(true);
-                latch.countDown();
+            configReader = new ConfigReader(new Consumer<ConfigReader.Config>() {
+                @Override
+                public void accept(ConfigReader.Config config) {
+                    //callbackInvoked.set(true);
+                    //latch.countDown();
+                }
             });
         } finally {
             if (configReader != null) {
