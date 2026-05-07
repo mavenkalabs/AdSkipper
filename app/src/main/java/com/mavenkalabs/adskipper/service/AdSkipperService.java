@@ -22,7 +22,8 @@ import com.mavenkalabs.adskipper.rules.RulesParser;
 import com.mavenkalabs.adskipper.util.ConfigReader;
 import com.mavenkalabs.adskipper.util.LogWriter;
 
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,9 +46,9 @@ public class AdSkipperService extends AccessibilityService  {
 
     private boolean adInProgress = false;
 
-    private long lastUserClickTimestamp = 0L;
-
     private ConfigReader configReader;
+
+    private long lastClickTS = 0L;
 
     private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
 
@@ -57,20 +58,15 @@ public class AdSkipperService extends AccessibilityService  {
 
     private static final String TAG = AdSkipperService.class.getName();
 
-    private static final long USER_CLICK_QUIET_INTERVAL = 10000;
-
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         try {
             if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-                Log.d(TAG, "View click event received");
-                lastUserClickTimestamp = System.currentTimeMillis();
+                lastClickTS = System.currentTimeMillis();
                 return;
             }
 
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put(RuleConstants.RULE_PARAM_QUIET_INTERVAL, USER_CLICK_QUIET_INTERVAL);
-            parameters.put(RuleConstants.RULE_PARAM_LAST_USER_CLICK_TS, lastUserClickTimestamp);
+            Map<String, Object> parameters = Collections.singletonMap(RuleConstants.RULE_PARAM_LAST_USER_CLICK_TS, lastClickTS);
 
             final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
             final AccessibilityNodeInfo rootNode = getRootInActiveWindow();
@@ -245,6 +241,10 @@ public class AdSkipperService extends AccessibilityService  {
             packages.addAll(config.getMuteRules().keySet());
             serviceInfo.packageNames = packages.toArray(new String[0]);
             setServiceInfo(serviceInfo);
+
+            Log.d(TAG, "Click rules are:" + packageClickRules.get());
+            Log.d(TAG, "Mute rules are:" + packageMuteRules.get());
+            Log.d(TAG, "Packages are:" + Arrays.asList(serviceInfo.packageNames));
         });
     }
 }

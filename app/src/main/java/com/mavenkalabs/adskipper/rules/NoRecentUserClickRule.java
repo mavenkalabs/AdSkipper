@@ -8,18 +8,26 @@ import java.util.Map;
 
 import static com.mavenkalabs.adskipper.rules.RuleConstants.RULE_ID_NO_RECENT_USER_CLICK;
 import static com.mavenkalabs.adskipper.rules.RuleConstants.RULE_PARAM_LAST_USER_CLICK_TS;
-import static com.mavenkalabs.adskipper.rules.RuleConstants.RULE_PARAM_QUIET_INTERVAL;
 
 public class NoRecentUserClickRule implements BaseRule {
+    private final long interval;
+
+    public NoRecentUserClickRule(String ruleAsString) {
+        String[] arr = ruleAsString.split(",");
+        if (arr.length != 2) {
+            throw new IllegalArgumentException();
+        } else {
+            interval = Long.parseLong(arr[1]);
+        }
+    }
+
     @Override
     public RuleResult apply(AccessibilityNodeInfo node, Map<String, Object> parameters) {
         if (parameters != null) {
             Object value1 = parameters.get(RULE_PARAM_LAST_USER_CLICK_TS);
-            Object value2 = parameters.get(RULE_PARAM_QUIET_INTERVAL);
-            if (value1 instanceof Long && value2 instanceof Long) {
+            if (value1 instanceof Long) {
                 long clickTS = (Long) value1;
-                long quietInterval = (Long) value2;
-                if (System.currentTimeMillis() > (clickTS + quietInterval)) {
+                if (System.currentTimeMillis() > (clickTS + interval)) {
                     return new RuleResult(true);
                 }
             }
@@ -30,6 +38,6 @@ public class NoRecentUserClickRule implements BaseRule {
     @NonNull
     @Override
     public String toString() {
-        return RULE_ID_NO_RECENT_USER_CLICK;
+        return String.join(",", RULE_ID_NO_RECENT_USER_CLICK, String.valueOf(interval)) ;
     }
 }

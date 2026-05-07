@@ -12,8 +12,8 @@ public class RulesParser {
                             .map((s) -> parse(s, packageName))
                             .toArray(BaseRule[]::new));
         } else {
-            if (RuleConstants.RULE_ID_NO_RECENT_USER_CLICK.equals(ruleAsString)) {
-                return new NoRecentUserClickRule();
+            if (ruleAsString.startsWith(RuleConstants.RULE_ID_NO_RECENT_USER_CLICK)) {
+                return new NoRecentUserClickRule(ruleAsString);
             } else if (ruleAsString.startsWith("!")) {
                 return new MustNotExistRule(ruleAsString.substring(1), packageName);
             } else {
