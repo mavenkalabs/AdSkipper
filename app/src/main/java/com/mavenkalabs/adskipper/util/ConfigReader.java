@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ConfigReader implements AutoCloseable {
-    private static final String CONFIG_URL = "https://raw.githubusercontent.com/mavenkalabs/pubdocs/refs/heads/snackbaraction/adskipper/config.json";
+    private static final String CONFIG_URL = "https://mavenkalabs.github.io/pubdocs/adskipper/config.json";
     private static final String HTTP_RES_HEADER_ETAG = "Etag";
     private static final String HTTP_REQ_HEADER_ETAG = "If-None-Match";
     private static final String HTTP_REQ_METHOD = "GET";
