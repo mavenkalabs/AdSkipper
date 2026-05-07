@@ -13,7 +13,7 @@ import static org.junit.Assert.fail;
 
 public class ConfigReaderTest {
 
-    @Test()
+    @Test
     public void verifyConfigRetrieval() throws Exception {
         final AtomicBoolean callbackInvoked = new AtomicBoolean();
         CountDownLatch latch = new CountDownLatch(1);
@@ -30,7 +30,7 @@ public class ConfigReaderTest {
     }
 
 
-    @Test()
+    @Test
     public void verifyConfigNotRetrievedWhenNoChange() throws Exception {
         final AtomicInteger callbackCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
