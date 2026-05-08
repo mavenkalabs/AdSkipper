@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class ConfigReader implements AutoCloseable {
+public class ConfigReader implements Closeable {
     private static final String CONFIG_URL = "https://mavenkalabs.github.io/pubdocs/adskipper/config.json";
     private static final String HTTP_RES_HEADER_ETAG = "Etag";
     private static final String HTTP_REQ_HEADER_ETAG = "If-None-Match";
@@ -87,7 +88,7 @@ public class ConfigReader implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         executorService.close();
     }
 
