@@ -1,7 +1,6 @@
 package com.mavenkalabs.adskipper.service;
 
 import android.accessibilityservice.AccessibilityService;
-import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.GestureDescription;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -21,15 +20,11 @@ import com.mavenkalabs.adskipper.rules.RulesParser;
 import com.mavenkalabs.adskipper.util.AppLog;
 import com.mavenkalabs.adskipper.util.ConfigReader;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AdSkipperService extends AccessibilityService  {
@@ -203,7 +198,8 @@ public class AdSkipperService extends AccessibilityService  {
                 rulesParser.orRules(Stream.of("skip_ad_button", "modern_miniplayer_skip_ad_button").
                         map(s -> rulesParser.parse(s, "com.google.android.youtube")).toArray(BaseRule[]::new)),
         "com.google.android.apps.youtube.music",
-                rulesParser.parse("skip_ad_button", "com.google.android.apps.youtube.music")
+                rulesParser.orRules(Stream.of("skip_ad_button", "snackbar_action&_ruleid_no_recent_user_click,10000").
+                        map(s -> rulesParser.parse(s, "com.google.android.apps.youtube.music")).toArray(BaseRule[]::new))
         ));
 
         packageMuteRules.set(Map.of(
@@ -216,6 +212,7 @@ public class AdSkipperService extends AccessibilityService  {
                         map(s -> rulesParser.parse(s, "com.google.android.apps.youtube.music")).toArray(BaseRule[]::new))
         ));
 
+        /*
         configReader = new ConfigReader(config -> {
             packageClickRules.set(config.getClickRules().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
@@ -237,6 +234,6 @@ public class AdSkipperService extends AccessibilityService  {
             AppLog.d(TAG, "Click rules are: {0}", packageClickRules.get());
             AppLog.d(TAG, "Mute rules are: {0}", packageMuteRules.get());
             AppLog.d(TAG, "Packages are: {0}", Arrays.asList(serviceInfo.packageNames));
-        });
+        });*/
     }
 }
