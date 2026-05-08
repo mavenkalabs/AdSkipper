@@ -79,7 +79,7 @@ public class AppLog implements AutoCloseable{
     }
 
     public static void logAccessibilityEvent(AccessibilityNodeInfo rootNode, EventType eventType) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && rootNode != null) {
+        if (rootNode != null) {
             StringBuilder buffer = new StringBuilder();
             buffer.append("Logging event of type ")
                     .append(eventType.name())
