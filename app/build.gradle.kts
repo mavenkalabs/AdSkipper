@@ -11,8 +11,8 @@ android {
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.0.18"
+        versionCode = 19
+        versionName = "1.0.19"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -60,7 +60,7 @@ dependencies {
     implementation("androidx.fragment:fragment:1.8.9")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.23.0")
-
+    testImplementation("org.json:json:20251224")
     // Core library
     androidTestImplementation("androidx.test:core:1.7.0")
 
