@@ -93,6 +93,7 @@ public class AdSkipperService extends AccessibilityService  {
                 if (conditionSatisfied && foundNodes != null && !foundNodes.isEmpty()) {
                     foundNodes.stream()
                             .filter(AccessibilityNodeInfo::isClickable)
+                            .filter(AccessibilityNodeInfo::isEnabled)
                             .findFirst()
                             .ifPresent(accessibilityNodeInfo -> {
                                 tap(accessibilityNodeInfo);

@@ -115,6 +115,20 @@ public class AdSkipperServiceTest {
         verify(service, times(1)).dispatchGesture(any(), any(), any());
     }
 
+
+    @Test
+    public void verifyEvtHandlingWithDisabledButton() {
+        when(nodeInfoMock.findAccessibilityNodeInfosByViewId(eq(YT_PKG_NAME+":id/skip_ad_button")))
+                .thenReturn(List.of(nodeInfoMock));
+        when(nodeInfoMock.isClickable()).thenReturn(true);
+        when(nodeInfoMock.isVisibleToUser()).thenReturn(true);
+        when(nodeInfoMock.isEnabled()).thenReturn(false);
+
+        service.onAccessibilityEvent(eventMock);
+        verify(nodeInfoMock, never()).performAction(anyInt());
+        verify(service, never()).dispatchGesture(any(), any(), any());
+    }
+
     @Test()
     public void verifyEvtHandlingNullSource() {
         when(eventMock.getSource()).thenReturn(null);
