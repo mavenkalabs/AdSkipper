@@ -37,7 +37,7 @@ internal class RulesParserTest {
         val rule1 = rulesParser.parse(ruleAsString1, "test.package")
         val ruleAsString2 = String.join(
             ",",
-            RuleConstants.RULE_ID_NO_RECENT_USER_CLICK,
+            RULE_ID_NO_RECENT_USER_CLICK,
             1000.toString()
         )
         val rule2 = rulesParser.parse(ruleAsString2, "test.package")
