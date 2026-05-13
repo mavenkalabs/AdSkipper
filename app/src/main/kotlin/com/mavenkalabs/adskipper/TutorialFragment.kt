@@ -22,16 +22,16 @@ class TutorialFragment : DialogFragment() {
         val nightMode =
             (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
-        binding!!.videoTutorial.setVideoURI(
+        binding?.videoTutorial?.setVideoURI(
             ("android.resource://"
                     + requireContext().packageName
                     + "/"
                     + (if (nightMode) R.raw.tutorial_dark else R.raw.tutorial_light)).toUri()
         )
-        binding!!.videoTutorial.start()
-        binding!!.videoTutorial.setOnCompletionListener { player: MediaPlayer? -> dismiss() }
+        binding?.videoTutorial?.start()
+        binding?.videoTutorial?.setOnCompletionListener { player: MediaPlayer? -> dismiss() }
 
-        return binding!!.getRoot()
+        return binding?.getRoot()
     }
 
 

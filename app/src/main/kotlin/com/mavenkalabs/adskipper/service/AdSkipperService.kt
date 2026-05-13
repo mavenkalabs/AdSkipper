@@ -14,7 +14,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.preference.PreferenceManager
 import com.mavenkalabs.adskipper.rules.BaseRule
-import com.mavenkalabs.adskipper.rules.RuleConstants
+import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
 import com.mavenkalabs.adskipper.util.AppLog.Companion.disable
@@ -62,7 +62,7 @@ class AdSkipperService : AccessibilityService() {
             }
 
             val parameters = mutableMapOf(
-                RuleConstants.RULE_PARAM_LAST_USER_CLICK_TS to lastClickTS
+                RULE_PARAM_LAST_USER_CLICK_TS to lastClickTS
             )
 
             val eventPkgName =

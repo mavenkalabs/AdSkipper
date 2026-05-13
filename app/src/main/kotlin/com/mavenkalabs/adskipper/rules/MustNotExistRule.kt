@@ -12,9 +12,5 @@ class MustNotExistRule(id: String, packageName: String) : BaseIdRule(id, package
         return RuleResult(nodes == null || nodes.isEmpty())
     }
 
-    override fun toString(): String {
-        return listOf(
-            "!",
-            qualifiedId.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]).joinToString("")
-    }
+    override fun toString() = "!$id"
 }

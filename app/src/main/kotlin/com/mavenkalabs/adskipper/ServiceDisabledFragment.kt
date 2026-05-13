@@ -21,7 +21,7 @@ class ServiceDisabledFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentServiceDisabledBinding.inflate(inflater, container, false)
-        return binding!!.getRoot()
+        return binding?.getRoot()
     }
 
     override fun onResume() {
@@ -37,14 +37,14 @@ class ServiceDisabledFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding!!.buttonAgree.setOnClickListener { v: View? ->
+        binding?.buttonAgree?.setOnClickListener { v: View? ->
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }
 
-        binding!!.buttonDisagree.setOnClickListener { v: View? -> requireActivity().finishAndRemoveTask() }
+        binding?.buttonDisagree?.setOnClickListener { v: View? -> requireActivity().finishAndRemoveTask() }
 
-        binding!!.buttonTutorial.setOnClickListener { v: View? ->
+        binding?.buttonTutorial?.setOnClickListener { v: View? ->
             TutorialFragment().show(
                 getChildFragmentManager(), TutorialFragment.TAG
             )

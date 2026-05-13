@@ -2,7 +2,4 @@ package com.mavenkalabs.adskipper.rules
 
 import android.view.accessibility.AccessibilityNodeInfo
 
-class RuleResult (
-    val isPassed: Boolean,
-    val filteredNodes: MutableList<AccessibilityNodeInfo>? = null
-)
+data class RuleResult(val isPassed: Boolean = false, val filteredNodes : List<AccessibilityNodeInfo>? = null)

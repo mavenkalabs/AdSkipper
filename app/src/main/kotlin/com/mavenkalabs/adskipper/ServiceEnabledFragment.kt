@@ -23,7 +23,7 @@ class ServiceEnabledFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentServiceEnabledBinding.inflate(inflater, container, false)
-        return binding!!.getRoot()
+        return binding?.getRoot()
     }
 
     override fun onResume() {
@@ -39,7 +39,7 @@ class ServiceEnabledFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding!!.buttonGotoA11ySettings.setOnClickListener { v: View? ->
+        binding?.buttonGotoA11ySettings?.setOnClickListener { v: View? ->
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }

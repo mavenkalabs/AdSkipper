@@ -8,10 +8,8 @@ class MustExistRule(id: String, packageName: String) : BaseIdRule(id, packageNam
         parameters: Map<String, Any>?
     ): RuleResult {
         val nodes = node.findAccessibilityNodeInfosByViewId(this.qualifiedId)
-        return RuleResult(nodes != null && !nodes.isEmpty(), nodes)
+        return RuleResult(nodes?.isNotEmpty() == true, nodes)
     }
 
-    override fun toString(): String {
-        return qualifiedId.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-    }
+    override fun toString() = id
 }
