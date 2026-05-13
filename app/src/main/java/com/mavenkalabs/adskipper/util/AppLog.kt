@@ -1,143 +1,167 @@
-package com.mavenkalabs.adskipper.util;
+package com.mavenkalabs.adskipper.util
 
-import android.content.ContentResolver;
-import android.content.ContentValues;
-import android.content.Context;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.view.accessibility.AccessibilityNodeInfo;
+import android.content.ContentValues
+import android.content.Context
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.util.Log
+import android.view.accessibility.AccessibilityNodeInfo
+import java.io.BufferedWriter
+import java.io.OutputStreamWriter
+import java.io.Writer
+import java.lang.AutoCloseable
+import java.nio.charset.StandardCharsets
+import java.text.MessageFormat
+import java.time.Instant
+import java.util.Arrays
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
+import java.util.stream.Collectors
 
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-public class AppLog implements AutoCloseable{
-    public enum EventType { SKIP, AD }
-
-    private static final String TAG = AppLog.class.getName();
-
-    private static final AppLog instance = new AppLog();
-    private final AtomicBoolean enabledRef = new AtomicBoolean(false);
-    private final AtomicReference<BufferedWriter> logWriterRef = new AtomicReference<>();
-
-    private AppLog() {
+class AppLog private constructor() : AutoCloseable {
+    enum class EventType {
+        SKIP, AD
     }
 
-    @Override
-    public void close() {
-        disable();
+    private val enabledRef = AtomicBoolean(false)
+    private val logWriterRef = AtomicReference<BufferedWriter?>()
+
+    override fun close() {
+        disable()
     }
 
-    public static void enable(Context context) {
-        if (context != null) {
-            ContentResolver resolver = context.getContentResolver();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, "adskipper-debug-" + System.currentTimeMillis() + ".txt");
-            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain");
-            contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+    companion object {
+        private val TAG: String = AppLog::class.java.getName()
 
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues);
-                    if (uri != null) {
-                        final BufferedWriter logWriter = new BufferedWriter(new OutputStreamWriter(
-                                resolver.openOutputStream(uri), StandardCharsets.UTF_8));
-                        instance.logWriterRef.set(logWriter);
+        private val instance = AppLog()
+        @JvmStatic
+        fun enable(context: Context?) {
+            if (context != null) {
+                val resolver = context.contentResolver
+                val contentValues = ContentValues()
+                contentValues.put(
+                    MediaStore.MediaColumns.DISPLAY_NAME,
+                    "adskipper-debug-" + System.currentTimeMillis() + ".txt"
+                )
+                contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                contentValues.put(
+                    MediaStore.MediaColumns.RELATIVE_PATH,
+                    Environment.DIRECTORY_DOWNLOADS
+                )
+
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val uri = resolver.insert(
+                            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            contentValues
+                        )
+                        if (uri != null) {
+                            val logWriter = BufferedWriter(
+                                OutputStreamWriter(
+                                    resolver.openOutputStream(uri), StandardCharsets.UTF_8
+                                )
+                            )
+                            instance.logWriterRef.set(logWriter)
+                        }
                     }
+                } catch (t: Throwable) {
+                    e(TAG, "Error in creating AppLog output file", t)
                 }
-            } catch (Throwable t) {
-                AppLog.e(TAG, "Error in creating AppLog output file", t);
             }
+
+            instance.enabledRef.set(true)
         }
 
-        instance.enabledRef.set(true);
-    }
-
-    public static void disable() {
-        final Writer logWriter = instance.logWriterRef.get();
-        if (logWriter != null) {
-            try {
-                logWriter.close();
-            } catch (Throwable e) {
-                AppLog.e(TAG, "Error in closing AppLog output file", e);
+        @JvmStatic
+        fun disable() {
+            val logWriter: Writer? = instance.logWriterRef.get()
+            if (logWriter != null) {
+                try {
+                    logWriter.close()
+                } catch (e: Throwable) {
+                    e(TAG, "Error in closing AppLog output file", e)
+                }
             }
+
+            instance.enabledRef.set(false)
         }
 
-        instance.enabledRef.set(false);
-    }
-
-    public static void logAccessibilityEvent(AccessibilityNodeInfo rootNode, EventType eventType) {
-        if (rootNode != null) {
-            StringBuilder buffer = new StringBuilder();
+        @JvmStatic
+        fun logAccessibilityEvent(rootNode: AccessibilityNodeInfo, eventType: EventType) {
+            val buffer = StringBuilder()
             buffer.append("Logging event of type ")
-                    .append(eventType.name())
-                    .append(System.lineSeparator());
-            logNode(rootNode, buffer, "");
+                .append(eventType.name)
+                .append(System.lineSeparator())
+            logNode(rootNode, buffer, "")
 
-            try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
-                executor.execute(() -> safelyWriteToLog(TAG, buffer.toString()));
-            }
-        }
-    }
-
-    private static void logNode(AccessibilityNodeInfo node, StringBuilder sbuf, String prefix) {
-        if (node != null) {
-            if (node.getViewIdResourceName() != null) {
-                sbuf.append(prefix).append(node).append(System.lineSeparator());
-                prefix = prefix.concat(" ");
-            }
-
-            int childCount = node.getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                logNode(node.getChild(i), sbuf, prefix);
-            }
-        }
-    }
-
-
-    public static void d(String tag, String message, Object... args) {
-        if (instance.enabledRef.get()) {
-            String formattedMessage = MessageFormat.format(message, args);
-            Log.d(tag, formattedMessage);
-            safelyWriteToLog(tag, formattedMessage);
-        }
-    }
-
-    private static void safelyWriteToLog(String tag, String formattedMessage) {
-        final BufferedWriter logWriter = instance.logWriterRef.get();
-        if (logWriter != null) {
+            var executor: ExecutorService? = null
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    logWriter.write(String.join(",", Instant.now().toString(), tag, formattedMessage));
-                    logWriter.newLine();
-                    logWriter.flush();
-                }
-            } catch (Throwable t) {
-                // ignore
+                executor = Executors.newSingleThreadExecutor()
+                executor.execute { safelyWriteToLog(TAG, buffer.toString()) }
+            } finally {
+                executor?.close()
             }
         }
-    }
 
-    public static void e(String tag, String message, Throwable t, Object... args) {
-        if (instance.enabledRef.get()) {
-            String formattedMessage = MessageFormat.format(message, args);
-            Log.e(tag, formattedMessage, t);
-            safelyWriteToLog(tag, formattedMessage);
-            safelyWriteToLog(tag, t.getMessage());
-            safelyWriteToLog(tag, Arrays.stream(t.getStackTrace()).map(StackTraceElement::toString)
-                    .collect(Collectors.joining(System.lineSeparator())));
+        private fun logNode(node: AccessibilityNodeInfo, sbuf: StringBuilder, prefix: String) {
+            var prefix = prefix
+            if (node.viewIdResourceName != null) {
+                sbuf.append(prefix).append(node).append(System.lineSeparator())
+                prefix = "$prefix "
+            }
+
+            val childCount = node.childCount
+            for (i in 0..<childCount) {
+                logNode(node.getChild(i), sbuf, prefix)
+            }
+        }
+
+
+        fun d(tag: String, message: String, vararg args: Any?) {
+            if (instance.enabledRef.get()) {
+                val formattedMessage = MessageFormat.format(message, *args)
+                Log.d(tag, formattedMessage)
+                safelyWriteToLog(tag, formattedMessage)
+            }
+        }
+
+        private fun safelyWriteToLog(tag: String, formattedMessage: String?) {
+            val logWriter: BufferedWriter? = instance.logWriterRef.get()
+            if (logWriter != null) {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        logWriter.write(
+                            listOf(
+                                Instant.now().toString(),
+                                tag,
+                                formattedMessage
+                            ).joinToString()
+                        )
+                        logWriter.newLine()
+                        logWriter.flush()
+                    }
+                } catch (_: Throwable) {
+                    // ignore
+                }
+            }
+        }
+
+        @JvmStatic
+        fun e(tag: String, message: String, t: Throwable, vararg args: Any?) {
+            if (instance.enabledRef.get()) {
+                val formattedMessage = MessageFormat.format(message, *args)
+                Log.e(tag, formattedMessage, t)
+                safelyWriteToLog(tag, formattedMessage)
+                safelyWriteToLog(tag, t.message)
+                safelyWriteToLog(
+                    tag,
+                    Arrays.stream<StackTraceElement>(t.stackTrace)
+                        .map<String> { it.toString() }
+                        .collect(Collectors.joining(System.lineSeparator())))
+            }
         }
     }
 }

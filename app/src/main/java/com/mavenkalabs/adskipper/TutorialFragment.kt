@@ -1,40 +1,46 @@
-package com.mavenkalabs.adskipper;
+package com.mavenkalabs.adskipper
 
-import android.content.res.Configuration;
-import android.net.Uri;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.content.res.Configuration
+import android.media.MediaPlayer
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.core.net.toUri
+import androidx.fragment.app.DialogFragment
+import com.mavenkalabs.adskipper.databinding.FragmentTutorialBinding
 
-import androidx.fragment.app.DialogFragment;
+class TutorialFragment : DialogFragment() {
+    private var binding: FragmentTutorialBinding? = null
 
-import com.mavenkalabs.adskipper.databinding.FragmentTutorialBinding;
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        binding = FragmentTutorialBinding.inflate(inflater, container, false)
+        val nightMode =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
-public class TutorialFragment extends DialogFragment {
-    public static final String TAG = TutorialFragment.class.getSimpleName();
-    private FragmentTutorialBinding binding;
+        binding!!.videoTutorial.setVideoURI(
+            ("android.resource://"
+                    + requireContext().packageName
+                    + "/"
+                    + (if (nightMode) R.raw.tutorial_dark else R.raw.tutorial_light)).toUri()
+        )
+        binding!!.videoTutorial.start()
+        binding!!.videoTutorial.setOnCompletionListener { player: MediaPlayer? -> dismiss() }
 
-    @androidx.annotation.Nullable
-    @Override
-    public View onCreateView(@androidx.annotation.NonNull LayoutInflater inflater, @androidx.annotation.Nullable ViewGroup container, @androidx.annotation.Nullable Bundle savedInstanceState) {
-        binding = FragmentTutorialBinding.inflate(inflater, container, false);
-        boolean nightMode = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-
-        binding.videoTutorial.setVideoURI(Uri.parse("android.resource://"
-                + requireContext().getPackageName()
-                + "/"
-                + (nightMode ? R.raw.tutorial_dark : R.raw.tutorial_light)));
-        binding.videoTutorial.start();
-        binding.videoTutorial.setOnCompletionListener((player) -> dismiss());
-
-        return binding.getRoot();
+        return binding!!.getRoot()
     }
 
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
+    override fun onDestroyView() {
+        super.onDestroyView()
+        binding = null
+    }
+
+    companion object {
+        val TAG: String = TutorialFragment::class.java.getSimpleName()
     }
 }

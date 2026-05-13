@@ -1,58 +1,50 @@
-package com.mavenkalabs.adskipper.rules;
+package com.mavenkalabs.adskipper.rules
 
-import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo
+import java.util.stream.Collectors
 
-import androidx.annotation.NonNull;
+class MultiRule(private val conditionality: Conditionality, vararg rules: BaseRule) : BaseRule {
+    private val childRules: List<BaseRule> = listOf(*rules)
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-public class MultiRule implements BaseRule {
-    private final Conditionality conditionality;
-    private final List<BaseRule> childRules;
-
-    public MultiRule(Conditionality c, BaseRule... rules) {
-        this.conditionality = c;
-        this.childRules = Arrays.asList(rules);
-    }
-
-    @Override
-    public RuleResult apply(AccessibilityNodeInfo node, Map<String, Object> parameters) {
+    override fun apply(
+        node: AccessibilityNodeInfo,
+        parameters: Map<String, Any>?
+    ): RuleResult {
         if (conditionality == Conditionality.AND) {
-            List<AccessibilityNodeInfo> allFilteredNodes = new ArrayList<>();
-            boolean passed = childRules.stream().allMatch(childRule -> {
-                RuleResult result = childRule.apply(node, parameters);
-                List<AccessibilityNodeInfo> resultNodes = result.getFilteredNodes();
+            val allFilteredNodes: MutableList<AccessibilityNodeInfo> =
+                mutableListOf()
+            val passed = childRules.stream().allMatch { childRule ->
+                val result = childRule.apply(node, parameters)
+                val resultNodes = result.filteredNodes
                 if (resultNodes != null) {
-                    allFilteredNodes.addAll(resultNodes);
+                    allFilteredNodes.addAll(resultNodes)
                 }
-                return result.isPassed();
-            });
+                result.isPassed
+            }
 
-            return new RuleResult(passed, passed ? allFilteredNodes : null);
+            return RuleResult(passed, if (passed) allFilteredNodes else null)
         } else {
-            List<AccessibilityNodeInfo> allFilteredNodes = new ArrayList<>();
-            boolean passed = childRules.stream().anyMatch(childRule -> {
-                RuleResult result = childRule.apply(node, parameters);
-                List<AccessibilityNodeInfo> resultNodes = result.getFilteredNodes();
-                if (result.isPassed() && resultNodes != null) {
-                    allFilteredNodes.addAll(resultNodes);
+            val allFilteredNodes: MutableList<AccessibilityNodeInfo> =
+                mutableListOf()
+            val passed = childRules.stream().anyMatch { childRule ->
+                val result = childRule.apply(node, parameters)
+                val resultNodes = result.filteredNodes
+                if (result.isPassed && resultNodes != null) {
+                    allFilteredNodes.addAll(resultNodes)
                 }
-                return result.isPassed();
-            });
-            return new RuleResult(passed, passed ? allFilteredNodes : null);
+                result.isPassed
+            }
+            return RuleResult(passed, if (passed) allFilteredNodes else null)
         }
     }
 
-    @NonNull
-    @Override
-    public String toString() {
-        return String.join(conditionality == Conditionality.OR ? "|" : "&", childRules.stream().map(Object::toString).toArray(String[]::new));
+    override fun toString(): String {
+        return childRules.stream()
+                .map<String> { it.toString() }
+                .collect(Collectors.joining(if (conditionality == Conditionality.OR) "|" else "&"))
     }
 
-    public enum Conditionality {
+    enum class Conditionality {
         AND, OR
     }
 }

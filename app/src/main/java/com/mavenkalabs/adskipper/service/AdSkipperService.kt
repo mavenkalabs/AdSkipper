@@ -1,217 +1,248 @@
-package com.mavenkalabs.adskipper.service;
+package com.mavenkalabs.adskipper.service
 
-import android.accessibilityservice.AccessibilityService;
-import android.accessibilityservice.GestureDescription;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Path;
-import android.graphics.Rect;
-import android.media.AudioManager;
-import android.view.ViewConfiguration;
-import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityNodeInfo;
+import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
+import android.accessibilityservice.GestureDescription.StrokeDescription
+import android.content.Intent
+import android.content.SharedPreferences
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.graphics.Path
+import android.graphics.Rect
+import android.media.AudioManager
+import android.view.ViewConfiguration
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
+import androidx.preference.PreferenceManager
+import com.mavenkalabs.adskipper.rules.BaseRule
+import com.mavenkalabs.adskipper.rules.RuleConstants
+import com.mavenkalabs.adskipper.rules.RulesParser
+import com.mavenkalabs.adskipper.util.AppLog
+import com.mavenkalabs.adskipper.util.AppLog.Companion.disable
+import com.mavenkalabs.adskipper.util.AppLog.Companion.e
+import com.mavenkalabs.adskipper.util.AppLog.Companion.enable
+import com.mavenkalabs.adskipper.util.AppLog.Companion.logAccessibilityEvent
+import com.mavenkalabs.adskipper.util.ConfigReader
+import java.util.concurrent.atomic.AtomicReference
+import java.util.function.Consumer
 
-import androidx.preference.PreferenceManager;
+class AdSkipperService : AccessibilityService() {
+    private var muteAds = false
 
-import com.mavenkalabs.adskipper.rules.BaseRule;
-import com.mavenkalabs.adskipper.rules.RuleConstants;
-import com.mavenkalabs.adskipper.rules.RuleResult;
-import com.mavenkalabs.adskipper.rules.RulesParser;
-import com.mavenkalabs.adskipper.util.AppLog;
-import com.mavenkalabs.adskipper.util.ConfigReader;
+    private var captureLogs = false
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
+    private var adInProgress = false
 
-public class AdSkipperService extends AccessibilityService  {
-    public static final String MUTE_ADS_PREF = "mute_ads";
+    private val configReader: ConfigReader? = null
 
-    public static final String CAPTURE_LOGS_PREF = "enable_logging";
+    private var lastClickTS = 0L
 
-    private boolean muteAds = false;
+    private val listenerRef = AtomicReference<OnSharedPreferenceChangeListener?>()
 
-    private boolean captureLogs = false;
+    private val packageClickRules = AtomicReference<MutableMap<String, BaseRule>?>()
 
-    private boolean adInProgress = false;
+    private val packageMuteRules = AtomicReference<MutableMap<String, BaseRule>?>()
 
-    private ConfigReader configReader;
-
-    private long lastClickTS = 0L;
-
-    private final AtomicReference<SharedPreferences.OnSharedPreferenceChangeListener> listenerRef = new AtomicReference<>();
-
-    private final AtomicReference<Map<String, BaseRule>> packageClickRules = new AtomicReference<>();
-
-    private final AtomicReference<Map<String, BaseRule>> packageMuteRules = new AtomicReference<>();
-
-    private static final String TAG = AdSkipperService.class.getName();
-
-    @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {
+    override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {
-            if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-                lastClickTS = System.currentTimeMillis();
-                return;
+            if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+                lastClickTS = System.currentTimeMillis()
+                return
             }
 
-            Map<String, Object> parameters = Collections.singletonMap(RuleConstants.RULE_PARAM_LAST_USER_CLICK_TS, lastClickTS);
+            val parameters = mutableMapOf(
+                RuleConstants.RULE_PARAM_LAST_USER_CLICK_TS to lastClickTS
+            )
 
-            final String eventPkgName = (event.getPackageName() != null ? event.getPackageName().toString() : null);
-            final AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-            BaseRule currentMuteRules = packageMuteRules.get().get(eventPkgName);
+            val eventPkgName =
+                (if (event.packageName != null) event.packageName.toString() else null)
+            val rootNode = rootInActiveWindow
+            val currentMuteRules = packageMuteRules.get()!![eventPkgName]
             if (rootNode != null && currentMuteRules != null) {
-                boolean conditionSatisfied = currentMuteRules.apply(rootNode, parameters).isPassed();
+                val conditionSatisfied = currentMuteRules.apply(rootNode, parameters).isPassed
                 if (conditionSatisfied) {
                     if (muteAds && !adInProgress) {
-                        toggleMute(true);
-                        adInProgress = true;
-                        AppLog.d(TAG, "onAccessibilityEvent: Detected ad");
+                        toggleMute(true)
+                        adInProgress = true
+                        AppLog.d(TAG, "onAccessibilityEvent: Detected ad")
                         if (captureLogs) {
-                            AppLog.logAccessibilityEvent(getRootInActiveWindow(), AppLog.EventType.AD);
+                            logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
                         }
                     }
                 }
 
                 if (muteAds && !conditionSatisfied) {
                     if (adInProgress) {
-                        toggleMute(false);
-                        adInProgress = false;
+                        toggleMute(false)
+                        adInProgress = false
                     }
                 }
             }
 
-            BaseRule currentClickRules = packageClickRules.get().get(eventPkgName);
+            val currentClickRules = packageClickRules.get()!![eventPkgName]
             if (rootNode != null && currentClickRules != null) {
-                RuleResult result = currentClickRules.apply(rootNode, parameters);
+                val result = currentClickRules.apply(rootNode, parameters)
 
-                boolean conditionSatisfied =  result.isPassed();
-                List<AccessibilityNodeInfo> foundNodes = result.getFilteredNodes();
+                val conditionSatisfied = result.isPassed
+                val foundNodes = result.filteredNodes
                 if (conditionSatisfied && foundNodes != null && !foundNodes.isEmpty()) {
                     foundNodes.stream()
-                            .filter(AccessibilityNodeInfo::isClickable)
-                            .filter(AccessibilityNodeInfo::isEnabled)
-                            .findFirst()
-                            .ifPresent(accessibilityNodeInfo -> {
-                                tap(accessibilityNodeInfo);
-                                AppLog.d(TAG, "onAccessibilityEvent: Skipped ad");
-                                if (captureLogs) {
-                                    AppLog.logAccessibilityEvent(getRootInActiveWindow(), AppLog.EventType.SKIP);
-                                }
-                            });
+                        .filter { it.isClickable && it.isEnabled }
+                        .findFirst()
+                        .ifPresent(Consumer { accessibilityNodeInfo: AccessibilityNodeInfo ->
+                            tap(accessibilityNodeInfo)
+                            AppLog.d(
+                                TAG,
+                                "onAccessibilityEvent: Skipped ad {0}",
+                                accessibilityNodeInfo.viewIdResourceName
+                            )
+                            if (captureLogs) {
+                                logAccessibilityEvent(
+                                    rootInActiveWindow,
+                                    AppLog.EventType.SKIP
+                                )
+                            }
+                        })
                 }
-
             }
-        } catch (Exception e) {
-            AppLog.e(TAG, "Unexpected error", e);
+        } catch (e: Exception) {
+            e(TAG, "Unexpected error", e)
         }
     }
 
-    private void tap(AccessibilityNodeInfo node) {
+    private fun tap(node: AccessibilityNodeInfo) {
         //try click action first
-        boolean success = node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        val success = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
 
         // execute gesture if click action doesn't succeed
         if (!success) {
-            Rect nodeBounds = new Rect();
-            node.getBoundsInScreen(nodeBounds);
-            Path tapPath = new Path();
-            tapPath.moveTo(nodeBounds.centerX(), nodeBounds.centerY());
-            GestureDescription.StrokeDescription tapStroke =
-                    new GestureDescription.StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout());
+            AppLog.d(TAG, "Click action didn't work. Dispatching gesture")
 
-            GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
-            gestureBuilder.addStroke(tapStroke);
-            dispatchGesture(gestureBuilder.build(), null, null);
+            val nodeBounds = Rect()
+            node.getBoundsInScreen(nodeBounds)
+            val tapPath = Path()
+            tapPath.moveTo(nodeBounds.centerX().toFloat(), nodeBounds.centerY().toFloat())
+            val tapStroke =
+                StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout().toLong())
+
+            val gestureBuilder = GestureDescription.Builder()
+            gestureBuilder.addStroke(tapStroke)
+            dispatchGesture(gestureBuilder.build(), null, null)
         }
     }
 
-    private void toggleMute(boolean mute) {
-        AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        boolean isCurrentlyMuted = audioManager.isStreamMute(AudioManager.STREAM_MUSIC);
+    private fun toggleMute(mute: Boolean) {
+        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        val isCurrentlyMuted = audioManager.isStreamMute(AudioManager.STREAM_MUSIC)
         if (isCurrentlyMuted != mute) {
-            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,
-                    mute ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE, 0);
+            audioManager.adjustStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                if (mute) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE, 0
+            )
         }
         if (mute) {
-            AppLog.d(TAG, "Toggling mute to true");
+            AppLog.d(TAG, "Toggling mute to true")
         } else {
-            AppLog.d(TAG, "Toggling mute to false");
+            AppLog.d(TAG, "Toggling mute to false")
         }
     }
 
-    @Override
-    public boolean onUnbind(Intent intent) {
-        toggleMute(false);
-        return true;
+    override fun onUnbind(intent: Intent?): Boolean {
+        toggleMute(false)
+        return true
     }
 
-    @Override
-    public void onInterrupt() {
-        toggleMute(false);
+    override fun onInterrupt() {
+        toggleMute(false)
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
+    override fun onDestroy() {
+        super.onDestroy()
 
         if (configReader != null) {
             try {
-                configReader.close();
-            } catch (Exception e) {
-                AppLog.e(TAG, e.getMessage(), e);
+                configReader.close()
+            } catch (e: Exception) {
+                e(TAG, e.message!!, e)
             }
         }
     }
 
-    @Override
-    protected void onServiceConnected() {
-        AppLog.enable(null); // enable ordinary logging
+    public override fun onServiceConnected() {
+        enable(null) // enable ordinary logging
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        muteAds = prefs.getBoolean(MUTE_ADS_PREF, true);
-        SharedPreferences.OnSharedPreferenceChangeListener listener;
-        prefs.registerOnSharedPreferenceChangeListener(listener = (p, key) -> {
-            AppLog.d(TAG, "onServiceConnected: pref changed {0}", key);
-
-            if (Objects.equals(key, MUTE_ADS_PREF)) {
-                muteAds = p.getBoolean(key, false);
-                AppLog.d(TAG, "onServiceConnected: muteAds now {0}", muteAds);
-            } else if (Objects.equals(key, CAPTURE_LOGS_PREF)) {
-                captureLogs = p.getBoolean(key, false);
+        val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        muteAds = prefs.getBoolean(MUTE_ADS_PREF, true)
+        val listener: OnSharedPreferenceChangeListener?
+        prefs.registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener { p: SharedPreferences?, key: String? ->
+            AppLog.d(TAG, "onServiceConnected: pref changed {0}", key)
+            if (key == MUTE_ADS_PREF) {
+                muteAds = p!!.getBoolean(key, false)
+                AppLog.d(TAG, "onServiceConnected: muteAds now {0}", muteAds)
+            } else if (key == CAPTURE_LOGS_PREF) {
+                captureLogs = p!!.getBoolean(key, false)
                 if (!captureLogs) {
-                    AppLog.disable();
-                    AppLog.enable(null); // enable ordinary logging
+                    disable()
+                    enable(null) // enable ordinary logging
                 } else {
-                    AppLog.enable(getApplicationContext());
+                    enable(applicationContext)
                 }
-                AppLog.d(TAG, "onServiceConnected: captureLogs now {0}", captureLogs);
+                AppLog.d(TAG, "onServiceConnected: captureLogs now {0}", captureLogs)
             }
-        });
-        listenerRef.set(listener);
+        }.also { listener = it })
+        listenerRef.set(listener)
 
-        final RulesParser rulesParser = new RulesParser();
-        packageClickRules.set(Map.of(
-        "com.google.android.youtube",
-                rulesParser.orRules(Stream.of("skip_ad_button", "modern_miniplayer_skip_ad_button").
-                        map(s -> rulesParser.parse(s, "com.google.android.youtube")).toArray(BaseRule[]::new)),
-        "com.google.android.apps.youtube.music",
-                rulesParser.orRules(Stream.of("skip_ad_button", "snackbar_action&_ruleid_no_recent_user_click,10000").
-                        map(s -> rulesParser.parse(s, "com.google.android.apps.youtube.music")).toArray(BaseRule[]::new))
-        ));
+        val rulesParser = RulesParser()
+        packageClickRules.set(
+            mutableMapOf(
+                "com.google.android.youtube" to
+                    rulesParser.orRules(
+                        *listOf(
+                            "skip_ad_button",
+                            "modern_miniplayer_skip_ad_button"
+                        ).map
+                        { rulesParser.parse(it, "com.google.android.youtube") }
+                            .toTypedArray()),
+                "com.google.android.apps.youtube.music" to
+                    rulesParser.orRules(
+                        *listOf(
+                            "skip_ad_button",
+                            "snackbar_action&_ruleid_no_recent_user_click,10000"
+                        ).map
+                        {
+                            rulesParser.parse(
+                                it,
+                                "com.google.android.apps.youtube.music"
+                            )
+                        }.toTypedArray())
+            )
+        )
 
-        packageMuteRules.set(Map.of(
-        "com.google.android.youtube",
-                rulesParser.orRules(Stream.of("player_learn_more_button",  "ad_progress_text",
-                                "modern_miniplayer_ad_badge", "ad_badge&!collapsible_ad_cta_overlay_container").
-                        map(s -> rulesParser.parse(s, "com.google.android.youtube")).toArray(BaseRule[]::new)),
-        "com.google.android.apps.youtube.music",
-                rulesParser.orRules(Stream.of("player_learn_more_button",  "ad_progress_text").
-                        map(s -> rulesParser.parse(s, "com.google.android.apps.youtube.music")).toArray(BaseRule[]::new))
-        ));
+        packageMuteRules.set(
+            mutableMapOf(
+                "com.google.android.youtube" to
+                    rulesParser.orRules(
+                        *listOf(
+                            "player_learn_more_button",
+                            "ad_progress_text",
+                            "modern_miniplayer_ad_badge",
+                            "ad_badge&!collapsible_ad_cta_overlay_container"
+                        ).map
+                        { rulesParser.parse(it, "com.google.android.youtube") }
+                            .toTypedArray()),
+                "com.google.android.apps.youtube.music" to
+                    rulesParser.orRules(
+                        *listOf(
+                            "player_learn_more_button",
+                            "ad_progress_text"
+                        ).map
+                        {
+                            rulesParser.parse(
+                                it,
+                                "com.google.android.apps.youtube.music"
+                            )
+                        }.toTypedArray())
+            )
+        )
 
         /*
         configReader = new ConfigReader(config -> {
@@ -236,5 +267,13 @@ public class AdSkipperService extends AccessibilityService  {
             AppLog.d(TAG, "Mute rules are: {0}", packageMuteRules.get());
             AppLog.d(TAG, "Packages are: {0}", Arrays.asList(serviceInfo.packageNames));
         });*/
+    }
+
+    companion object {
+        const val MUTE_ADS_PREF: String = "mute_ads"
+
+        const val CAPTURE_LOGS_PREF: String = "enable_logging"
+
+        private val TAG: String = AdSkipperService::class.java.getName()
     }
 }

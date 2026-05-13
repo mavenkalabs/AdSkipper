@@ -1,9 +1,7 @@
-package com.mavenkalabs.adskipper.rules;
+package com.mavenkalabs.adskipper.rules
 
-import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo
 
-import java.util.Map;
-
-public interface BaseRule {
-    RuleResult apply(AccessibilityNodeInfo node, Map<String, Object> parameters);
+interface BaseRule {
+    fun apply(node: AccessibilityNodeInfo, parameters: Map<String, Any>?): RuleResult
 }

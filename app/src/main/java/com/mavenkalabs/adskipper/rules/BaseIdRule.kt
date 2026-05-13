@@ -1,15 +1,13 @@
-package com.mavenkalabs.adskipper.rules;
+package com.mavenkalabs.adskipper.rules
 
-import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo
+import kotlin.Any
 
-import java.util.Map;
+abstract class BaseIdRule(id: String, packageName: String) : BaseRule {
+    protected val qualifiedId: String = listOf(packageName, ":id/", id).joinToString(separator = "")
 
-public abstract class BaseIdRule implements BaseRule {
-    protected final String qualifiedId;
-
-    public BaseIdRule(String id, String packageName) {
-        this.qualifiedId = String.join("", packageName, ":id/", id);
-    }
-
-    public abstract RuleResult apply(AccessibilityNodeInfo node, Map<String, Object> parameters);
+    abstract override fun apply(
+        node: AccessibilityNodeInfo,
+        parameters: Map<String, Any>?
+    ): RuleResult
 }

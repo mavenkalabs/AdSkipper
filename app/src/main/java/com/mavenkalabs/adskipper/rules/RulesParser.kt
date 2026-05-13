@@ -1,34 +1,31 @@
-package com.mavenkalabs.adskipper.rules;
+package com.mavenkalabs.adskipper.rules
 
-import java.util.Arrays;
-
-public class RulesParser {
-    public BaseRule parse(String ruleAsString, String packageName) {
-        if (ruleAsString == null || ruleAsString.trim().isEmpty()) {
-            throw new IllegalArgumentException();
-        } else if (ruleAsString.contains("&")) {
-            return new MultiRule(MultiRule.Conditionality.AND,
-                    Arrays.stream(ruleAsString.split("&"))
-                            .map((s) -> parse(s, packageName))
-                            .toArray(BaseRule[]::new));
+class RulesParser {
+    fun parse(ruleAsString: String, packageName: String): BaseRule {
+        require(!(ruleAsString.trim { it <= ' ' }.isEmpty()))
+        if (ruleAsString.contains("&")) {
+            return MultiRule (
+                MultiRule.Conditionality.AND,
+                *ruleAsString.split("&".toRegex())
+                    .map { s -> parse(s, packageName)  }
+                    .toTypedArray())
         } else {
-            if (ruleAsString.startsWith(RuleConstants.RULE_ID_NO_RECENT_USER_CLICK)) {
-                return new NoRecentUserClickRule(ruleAsString);
+            return if (ruleAsString.startsWith(RuleConstants.RULE_ID_NO_RECENT_USER_CLICK)) {
+                NoRecentUserClickRule(ruleAsString)
             } else if (ruleAsString.startsWith("!")) {
-                return new MustNotExistRule(ruleAsString.substring(1), packageName);
+                MustNotExistRule(ruleAsString.substring(1), packageName)
             } else {
-                return new MustExistRule(ruleAsString, packageName);
+                MustExistRule(ruleAsString, packageName)
             }
         }
     }
 
-    public BaseRule orRules(BaseRule... rules) {
-        if (rules == null || rules.length == 0) {
-            throw new IllegalArgumentException();
-        } else if (rules.length == 1) {
-            return rules[0];
+    fun orRules(vararg rules: BaseRule): BaseRule {
+        require(rules.isNotEmpty())
+        return if (rules.size == 1) {
+            rules[0]
         } else {
-            return new MultiRule(MultiRule.Conditionality.OR, rules);
+            MultiRule(MultiRule.Conditionality.OR, *rules)
         }
     }
 }

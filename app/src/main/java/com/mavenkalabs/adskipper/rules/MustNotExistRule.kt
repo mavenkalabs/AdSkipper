@@ -1,26 +1,20 @@
-package com.mavenkalabs.adskipper.rules;
+package com.mavenkalabs.adskipper.rules
 
-import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeInfo
+import kotlin.Any
 
-import androidx.annotation.NonNull;
-
-import java.util.List;
-import java.util.Map;
-
-public class MustNotExistRule extends BaseIdRule{
-    public MustNotExistRule(String id, String packageName) {
-        super(id, packageName);
+class MustNotExistRule(id: String, packageName: String) : BaseIdRule(id, packageName) {
+    override fun apply(
+        node: AccessibilityNodeInfo,
+        parameters: Map<String, Any>?
+    ): RuleResult {
+        val nodes = node.findAccessibilityNodeInfosByViewId(this.qualifiedId)
+        return RuleResult(nodes == null || nodes.isEmpty())
     }
 
-    @Override
-    public RuleResult apply(AccessibilityNodeInfo node, Map<String, Object> parameters) {
-        List<AccessibilityNodeInfo> nodes = node.findAccessibilityNodeInfosByViewId(this.qualifiedId);
-        return new RuleResult(nodes == null || nodes.isEmpty());
-    }
-
-    @NonNull
-    @Override
-    public String toString() {
-        return String.join("", "!", qualifiedId.split("/")[1]);
+    override fun toString(): String {
+        return listOf(
+            "!",
+            qualifiedId.split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]).joinToString("")
     }
 }
