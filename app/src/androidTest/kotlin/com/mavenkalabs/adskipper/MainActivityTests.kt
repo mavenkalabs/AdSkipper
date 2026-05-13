@@ -22,12 +22,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
 
-private const val TIMEOUT : Long = 2000
-private const val APP_NAME: String = "Ad Skipper"
-
 @RunWith(AndroidJUnit4::class)
 internal class MainActivityTests {
     private lateinit var uiDevice: UiDevice
+
+    companion object {
+        private const val TIMEOUT : Long = 2000
+        private const val APP_NAME: String = "Ad Skipper"
+    }
 
     @Before
     fun setupBefore() {

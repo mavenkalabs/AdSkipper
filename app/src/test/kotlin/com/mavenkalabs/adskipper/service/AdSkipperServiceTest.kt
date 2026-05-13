@@ -28,14 +28,14 @@ import org.mockito.Spy
 import org.mockito.kotlin.whenever
 import java.lang.AutoCloseable
 
-private
-const val YT_PKG_NAME: String = "com.google.android.youtube"
-
-private
-const val YT_MUSIC_PKG_NAME: String = "com.google.android.apps.youtube.music"
-
-
 internal class AdSkipperServiceTest {
+    companion object {
+        private
+        const val YT_PKG_NAME: String = "com.google.android.youtube"
+
+        private
+        const val YT_MUSIC_PKG_NAME: String = "com.google.android.apps.youtube.music"
+    }
 
     @Mock
     private lateinit var eventMock: AccessibilityEvent
