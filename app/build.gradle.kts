@@ -1,11 +1,12 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    kotlin("plugin.serialization") version "2.0.21" // Or your Kotlin version
 }
 
 android {
     namespace = "com.mavenkalabs.adskipper"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         testInstrumentationRunnerArguments += mapOf("clearPackageData" to "true")
@@ -39,22 +40,23 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_9
-        targetCompatibility = JavaVersion.VERSION_1_9
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     kotlin {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_9)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
         }
     }
     kotlinOptions {
         compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_1_9
-            targetCompatibility = JavaVersion.VERSION_1_9
+            sourceCompatibility = JavaVersion.VERSION_11
+            targetCompatibility = JavaVersion.VERSION_11
         }
     }
 }
@@ -72,6 +74,8 @@ dependencies {
     implementation("androidx.preference:preference:1.2.1")
     implementation("androidx.fragment:fragment:1.8.9")
     implementation("androidx.core:core-ktx:1.18.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20251224")
     // Core library

@@ -1,0 +1,90 @@
+[
+    {
+      "packageName": "com.google.android.youtube",
+      "handlers": [
+        {
+          "selectedAction": {
+            "type": "Tap"
+          },
+          "selector": {
+            "eventTypes": [
+              2048
+            ],
+            "conditions": [
+              "skip_ad_button",
+              "modern_miniplayer_skip_ad_button"
+            ]
+          }
+        },
+        {
+          "selectedAction": {
+            "type": "Mute",
+            "mute": true
+          },
+          "unselectedAction": {
+            "type": "Mute",
+            "mute": false
+          },
+          "selector": {
+            "eventTypes": [
+              2048
+            ],
+            "conditions": [
+              "player_learn_more_button",
+              "ad_progress_text",
+              "modern_miniplayer_ad_badge",
+              "ad_badge&!collapsible_ad_cta_overlay_container"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "packageName": "com.google.android.apps.youtube.music",
+      "handlers": [
+        {
+          "selectedAction": {
+            "type": "LogUserTap"
+          },
+          "selector": {
+            "eventTypes": [
+              1
+            ]
+          }
+        },
+        {
+          "selectedAction": {
+            "type": "Tap"
+          },
+          "selector": {
+            "eventTypes": [
+              2048
+            ],
+            "conditions": [
+              "skip_ad_button",
+              "snackbar_action&_ruleid_no_recent_user_click,10000"
+            ]
+          }
+        },
+        {
+          "selectedAction": {
+            "type": "Mute",
+            "mute": true
+          },
+          "unselectedAction": {
+            "type": "Mute",
+            "mute": false
+          },
+          "selector": {
+            "eventTypes": [
+              2048
+            ],
+            "conditions": [
+              "player_learn_more_button",
+              "ad_progress_text"
+            ]
+          }
+        }
+      ]
+    }
+  ]

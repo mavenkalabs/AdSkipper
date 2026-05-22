@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.content.res.AssetManager
 import android.media.AudioManager
 import android.os.Handler
 import android.view.accessibility.AccessibilityEvent
@@ -25,8 +26,11 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
 import org.mockito.Spy
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
+import java.io.File
 import java.lang.AutoCloseable
+import java.nio.file.Files
 
 internal class AdSkipperServiceTest {
     companion object {
@@ -55,18 +59,31 @@ internal class AdSkipperServiceTest {
     @Captor
     private var listenerArgumentCaptor: ArgumentCaptor<OnSharedPreferenceChangeListener?>? = null
 
+    @Mock
+    private lateinit var contextMock : Context
+
+    @Mock
+    private lateinit var assetManagerMock: AssetManager
+
     private var closeable: AutoCloseable? = null
 
     @Before
     fun setupBefore() {
         closeable = MockitoAnnotations.openMocks(this)
 
+        whenever { contextMock.assets }.thenReturn(assetManagerMock)
+        whenever { assetManagerMock.open(any()) }.thenReturn(
+            Files.newInputStream(
+                File(listOf("src", "main", "assets", "config.json")
+                    .joinToString(File.separator)).toPath()
+            )
+        )
         doReturn(audioManagerMock).whenever(service)
             .getSystemService(eq(Context.AUDIO_SERVICE))
         doReturn(false).whenever(audioManagerMock)
             .isStreamMute(ArgumentMatchers.eq(AudioManager.STREAM_MUSIC))
 
-        val contextMock = Mockito.mock(Context::class.java)
+        //val contextMock = Mockito.mock(Context::class.java)
         doReturn(contextMock).whenever(service).applicationContext
         doReturn(AdSkipperService::class.java.packageName)
             .whenever(contextMock).packageName
@@ -79,6 +96,7 @@ internal class AdSkipperServiceTest {
             )
         ).thenReturn(true)
 
+        doReturn(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED).whenever(eventMock).eventType
         doReturn(nodeInfoMock).whenever(service).rootInActiveWindow
         whenever(eventMock.packageName).thenReturn(YT_PKG_NAME)
         whenever(nodeInfoMock.isClickable).thenReturn(false)

@@ -1,6 +1,7 @@
 package com.mavenkalabs.adskipper.rules
 
 import android.view.accessibility.AccessibilityNodeInfo
+import com.mavenkalabs.adskipper.util.EXTRA_LAST_USER_CLICK_TS
 
 class NoRecentUserClickRule(val ruleAsString: String) : BaseRule {
     private val interval: Long
@@ -11,10 +12,9 @@ class NoRecentUserClickRule(val ruleAsString: String) : BaseRule {
         parameters: Map<String, Any>?
     ): RuleResult {
         if (parameters != null) {
-            val value1 = parameters[RULE_PARAM_LAST_USER_CLICK_TS]
-            if (value1 is Long) {
-                val clickTS = value1
-                if (System.currentTimeMillis() > (clickTS + interval)) {
+            val lastUserClickTS = parameters[EXTRA_LAST_USER_CLICK_TS]
+            if (lastUserClickTS is Long) {
+                if (System.currentTimeMillis() > (lastUserClickTS + interval)) {
                     return RuleResult(true)
                 }
             }
