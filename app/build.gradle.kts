@@ -1,19 +1,20 @@
+
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
-android {
+extensions.configure<ApplicationExtension> {
     namespace = "com.mavenkalabs.adskipper"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         testInstrumentationRunnerArguments += mapOf("clearPackageData" to "true")
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 20
-        versionName = "1.0.20"
+        versionCode = 21
+        versionName = "1.0.21"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -46,17 +47,11 @@ android {
         viewBinding = true
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_9)
-        }
-    }
-    kotlinOptions {
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_1_9
-            targetCompatibility = JavaVersion.VERSION_1_9
-        }
-    }
+}
+
+
+kotlin {
+    jvmToolchain(17) // Gradle 9 requires at least JDK 17 to run
 }
 
 dependencies {
@@ -73,7 +68,7 @@ dependencies {
     implementation("androidx.fragment:fragment:1.8.9")
     implementation("androidx.core:core-ktx:1.18.0")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20251224")
+    testImplementation("org.json:json:20260522")
     // Core library
     androidTestImplementation("androidx.test:core:1.7.0")
 
@@ -88,6 +83,6 @@ dependencies {
 
     // uiautomator
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
 }
