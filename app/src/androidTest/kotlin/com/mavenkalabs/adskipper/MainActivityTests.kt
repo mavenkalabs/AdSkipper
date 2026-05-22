@@ -133,9 +133,34 @@ internal class MainActivityTests {
         )
         assertTrue(found)
 
+        found = uiDevice.wait(
+            Until.hasObject(
+                By.text(
+                    ApplicationProvider.getApplicationContext<Context>().getString(R.string.mute_ads)).checked(true)
+            ), 1000)
+        assertTrue(found)
+
+        uiDevice.findObject(
+            By.text(ApplicationProvider.getApplicationContext<Context>().getString(R.string.mute_ads))
+        ).click()
+        found = uiDevice.wait(
+            Until.hasObject(
+                By.text(ApplicationProvider.getApplicationContext<Context>().getString(R.string.mute_ads)).checked(false)
+            ), 1000)
+        assertTrue(found)
+
         val prefs =
             PreferenceManager.getDefaultSharedPreferences(
                 ApplicationProvider.getApplicationContext())
+        assertFalse(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, true))
+        uiDevice.findObject(
+            By.text(ApplicationProvider.getApplicationContext<Context>().getString(R.string.mute_ads))
+        ).click()
+        found = uiDevice.wait(
+            Until.hasObject(
+                By.text(ApplicationProvider.getApplicationContext<Context>().getString(R.string.mute_ads)).checked(true)
+            ), 1000)
+        assertTrue(found)
         assertTrue(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false))
 
         launchA11ySettings()

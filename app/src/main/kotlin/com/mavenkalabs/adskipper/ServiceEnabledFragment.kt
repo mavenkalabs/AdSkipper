@@ -7,13 +7,13 @@ import android.provider.Settings.SettingNotFoundException
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.NavHostFragment
 import androidx.preference.PreferenceManager
 import com.mavenkalabs.adskipper.databinding.FragmentServiceEnabledBinding
 import com.mavenkalabs.adskipper.service.AdSkipperService
 import java.util.Arrays
-import androidx.core.content.edit
 
 class ServiceEnabledFragment : Fragment() {
     private var binding: FragmentServiceEnabledBinding? = null
@@ -39,14 +39,20 @@ class ServiceEnabledFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding?.buttonGotoA11ySettings?.setOnClickListener { v: View? ->
+        binding?.buttonGotoA11ySettings?.setOnClickListener { _: View? ->
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         if (!prefs.contains(AdSkipperService.MUTE_ADS_PREF)) {
-            prefs.edit { putBoolean(AdSkipperService.MUTE_ADS_PREF, true) }
+            prefs.edit (commit = true) { putBoolean(AdSkipperService.MUTE_ADS_PREF, true) }
+        }
+
+        binding?.checkboxMuteAds?.isChecked = prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false)
+
+        binding?.checkboxMuteAds?.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit (commit = true) { putBoolean(AdSkipperService.MUTE_ADS_PREF, isChecked) }
         }
     }
 
