@@ -94,7 +94,7 @@ class Mute(val mute: Boolean) : Action {
     }
 
     companion object {
-        private val isCurrentlyMutedRef = AtomicReference<Boolean>()
+        internal var isCurrentlyMutedRef = AtomicReference<Boolean>()
     }
 }
 

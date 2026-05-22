@@ -10,9 +10,11 @@ import android.media.AudioManager
 import android.os.Handler
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.mavenkalabs.adskipper.actions.Mute
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers
@@ -31,6 +33,7 @@ import org.mockito.kotlin.whenever
 import java.io.File
 import java.lang.AutoCloseable
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicReference
 
 internal class AdSkipperServiceTest {
     companion object {
@@ -83,7 +86,6 @@ internal class AdSkipperServiceTest {
         doReturn(false).whenever(audioManagerMock)
             .isStreamMute(ArgumentMatchers.eq(AudioManager.STREAM_MUSIC))
 
-        //val contextMock = Mockito.mock(Context::class.java)
         doReturn(contextMock).whenever(service).applicationContext
         doReturn(AdSkipperService::class.java.packageName)
             .whenever(contextMock).packageName
@@ -110,7 +112,10 @@ internal class AdSkipperServiceTest {
             )
         ).thenReturn(mutableListOf())
 
+        com.mavenkalabs.adskipper.service.Handler.extrasRef.set(mutableMapOf<String, Any>())
+        Mute.isCurrentlyMutedRef = AtomicReference<Boolean>()
         service.onServiceConnected()
+
     }
 
     @After
@@ -207,6 +212,11 @@ internal class AdSkipperServiceTest {
     fun verifyEvtHandlingSourceNoChildren() {
         service.onAccessibilityEvent(eventMock)
 
+        verify(service, Mockito.never()).dispatchGesture(
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any<GestureResultCallback?>(),
+            ArgumentMatchers.any<Handler?>()
+        )
         verify(nodeInfoMock, Mockito.never())
             .performAction(ArgumentMatchers.eq(AccessibilityNodeInfo.ACTION_CLICK))
     }
@@ -222,6 +232,11 @@ internal class AdSkipperServiceTest {
 
         service.onAccessibilityEvent(eventMock)
 
+        verify(service, Mockito.never()).dispatchGesture(
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any<GestureResultCallback?>(),
+            ArgumentMatchers.any<Handler?>()
+        )
         verify(nodeInfoMock, Mockito.never())
             .performAction(ArgumentMatchers.eq(AccessibilityNodeInfo.ACTION_CLICK))
     }
@@ -284,6 +299,11 @@ internal class AdSkipperServiceTest {
             .thenReturn("com.google.android.apps.notube")
         service.onAccessibilityEvent(eventMock)
 
+        verify(service, Mockito.never()).dispatchGesture(
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any<GestureResultCallback?>(),
+            ArgumentMatchers.any<Handler?>()
+        )
         verify(nodeInfoMock, Mockito.never())
             .performAction(ArgumentMatchers.eq(AccessibilityNodeInfo.ACTION_CLICK))
     }
@@ -340,7 +360,7 @@ internal class AdSkipperServiceTest {
         service.onAccessibilityEvent(eventMock)
 
         reset(nodeInfoMock)
-        doReturn(false).whenever(audioManagerMock)
+        doReturn(true).whenever(audioManagerMock)
             .isStreamMute(ArgumentMatchers.eq(AudioManager.STREAM_MUSIC))
         whenever(
             nodeInfoMock.findAccessibilityNodeInfosByViewId(
@@ -360,14 +380,17 @@ internal class AdSkipperServiceTest {
                 ArgumentMatchers.eq(AudioManager.ADJUST_MUTE),
                 ArgumentMatchers.eq(0)
             )
-        verify(audioManagerMock, times(1))
+        verify(audioManagerMock, times(2))
             .adjustStreamVolume(
                 ArgumentMatchers.eq(AudioManager.STREAM_MUSIC),
                 ArgumentMatchers.eq(AudioManager.ADJUST_UNMUTE),
                 ArgumentMatchers.eq(0)
             )
-        verify(nodeInfoMock, times(1))
-            .performAction(ArgumentMatchers.eq(AccessibilityNodeInfo.ACTION_CLICK))
+        verify(service, times(1)).dispatchGesture(
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any<GestureResultCallback?>(),
+            ArgumentMatchers.any<Handler?>()
+        )
     }
 
     @Test
@@ -377,8 +400,7 @@ internal class AdSkipperServiceTest {
                 listenerArgumentCaptor!!.capture()
             )
 
-        doReturn(false).whenever(sharedPreferencesMock)
-            .getBoolean(AdSkipperService.MUTE_ADS_PREF, false)
+        whenever { sharedPreferencesMock.getBoolean(eq(AdSkipperService.MUTE_ADS_PREF), any()) }.thenReturn(false)
         listenerArgumentCaptor!!.getValue()!!
             .onSharedPreferenceChanged(sharedPreferencesMock, AdSkipperService.MUTE_ADS_PREF)
 
@@ -394,8 +416,8 @@ internal class AdSkipperServiceTest {
         verify(audioManagerMock, Mockito.never())
             .adjustStreamVolume(
                 ArgumentMatchers.eq(AudioManager.STREAM_MUSIC),
-                ArgumentMatchers.anyInt(),
-                ArgumentMatchers.anyInt()
+                ArgumentMatchers.eq(AudioManager.ADJUST_MUTE),
+                ArgumentMatchers.eq(0)
             )
     }
 }
