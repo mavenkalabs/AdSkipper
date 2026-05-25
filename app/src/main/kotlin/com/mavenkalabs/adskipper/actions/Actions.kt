@@ -48,10 +48,6 @@ class LogUserTap: Action {
         return true
     }
 
-    override fun toString(): String {
-        return "LogUserTap()"
-    }
-
     companion object {
         private const val APP_CLICK_QUIET_INTERVAL: Int = 1000
         private val TAG = LogUserTap::class.java.name
@@ -87,10 +83,6 @@ class Mute(val mute: Boolean) : Action {
         } else {
             return false
         }
-    }
-
-    override fun toString(): String {
-        return "Mute(mute=$mute)"
     }
 
     companion object {
@@ -144,11 +136,24 @@ class Tap : Action {
         }?:false
     }
 
-    override fun toString(): String {
-        return "Tap()"
+    companion object {
+        private const val APP_CLICK_QUIET_INTERVAL = 1000
+    }
+}
+
+@Serializable
+@SerialName("LogA11y")
+class LogA11y: Action {
+    override fun apply(
+        service: AccessibilityService,
+        extras: MutableMap<String, Any>?,
+        node: AccessibilityNodeInfo?
+    ): Boolean {
+        AppLog.logNodeTree(service.rootInActiveWindow)
+
+        return true
     }
 
     companion object {
-        private const val APP_CLICK_QUIET_INTERVAL = 1000
     }
 }

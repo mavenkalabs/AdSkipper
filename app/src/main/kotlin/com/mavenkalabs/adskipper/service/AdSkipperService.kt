@@ -79,7 +79,6 @@ class AdSkipperService : AccessibilityService() {
         }.also { preferenceChangeListener = it })
 
         configRef.set( loadConfig(applicationContext).toMutableMap())
-        AppLog.enable(null)
         AppLog.d(TAG, "Config is set to {0}", configRef.get())
     }
 

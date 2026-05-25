@@ -32,34 +32,32 @@ internal class AppLogTest {
 
     @After
     fun tearDown() {
-        AppLog.disable()
+        AppLog.disableA11yLogging()
 
         mocksCloseable.close()
     }
 
     @Test
     fun verifyMessageLoggingWithParams() {
-        AppLog.enable(null)
         AppLog.d("TAG", "This is a {0} test with {1} and {2}", "Super", null, 1)
     }
 
 
     @Test
     fun verifyExceptionLogging() {
-        AppLog.enable(null)
         AppLog.e("TAG", "This is a {0} test with {1} and {2}", Exception(),"Super", null, 1)
     }
 
     @Test
     fun verifyMessageLoggingWithParamsWithContext() {
-        AppLog.enable(mockContext)
+        AppLog.enableA11yLogging(mockContext)
         AppLog.d("TAG", "This is a {0} test with {1} and {2}", "Super", null, 1)
     }
 
 
     @Test
     fun verifyExceptionLoggingWithContext() {
-        AppLog.enable(mockContext)
+        AppLog.enableA11yLogging(mockContext)
         AppLog.e("TAG", "This is a {0} test with {1} and {2}", Exception(),"Super", null, 1)
     }
 }
