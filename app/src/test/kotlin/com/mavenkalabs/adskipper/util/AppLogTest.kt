@@ -5,12 +5,12 @@ import android.content.Context
 import android.net.Uri
 import org.junit.After
 import org.junit.Before
+import org.junit.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when` as whenever
 import org.mockito.MockitoAnnotations
 import java.nio.file.Files
-import kotlin.test.Test
 
 
 internal class AppLogTest {

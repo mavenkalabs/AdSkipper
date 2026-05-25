@@ -2,27 +2,25 @@ package com.mavenkalabs.adskipper.util
 
 import junit.framework.TestCase.assertEquals
 import org.junit.Assert
+import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.test.Test
 import kotlin.test.fail
 
 internal class ConfigReaderTest {
 
-    @OptIn(ExperimentalAtomicApi::class)
     @Test
     fun verifyConfigRetrieval() {
         val callbackInvoked = AtomicBoolean(false)
         val latch = CountDownLatch(1)
         ConfigReader {
-            callbackInvoked.store(true)
+            callbackInvoked.set(true)
             latch.countDown()
         }.use {
             if (latch.await(2, TimeUnit.SECONDS)) {
-                Assert.assertTrue(callbackInvoked.load())
+                Assert.assertTrue(callbackInvoked.get())
             } else {
                 fail("callback was not invoked")
             }

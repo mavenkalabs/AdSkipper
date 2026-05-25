@@ -1,10 +1,11 @@
+import com.android.build.api.dsl.ApplicationExtension
+
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization") version "2.0.21" // Or your Kotlin version
 }
 
-android {
+extensions.configure<ApplicationExtension> {
     namespace = "com.mavenkalabs.adskipper"
     compileSdk = 37
 
@@ -12,9 +13,8 @@ android {
         testInstrumentationRunnerArguments += mapOf("clearPackageData" to "true")
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 20
-        versionName = "1.0.20"
+        versionCode = 21
+        versionName = "1.0.21"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,6 +39,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -47,18 +48,11 @@ android {
         viewBinding = true
         buildConfig = true
     }
+}
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-        }
-    }
-    kotlinOptions {
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_11
-            targetCompatibility = JavaVersion.VERSION_11
-        }
-    }
+
+kotlin {
+    jvmToolchain(17) // Gradle 9 requires at least JDK 17 to run
 }
 
 dependencies {
@@ -77,7 +71,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20251224")
+    testImplementation("org.json:json:20260522")
     // Core library
     androidTestImplementation("androidx.test:core:1.7.0")
 
@@ -92,6 +86,6 @@ dependencies {
 
     // uiautomator
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
 }
