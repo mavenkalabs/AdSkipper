@@ -15,8 +15,6 @@ import java.nio.charset.StandardCharsets
 import java.text.MessageFormat
 import java.time.Instant
 import java.util.Arrays
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.stream.Collectors
 
@@ -104,14 +102,7 @@ class AppLog private constructor() : AutoCloseable {
                     .append(eventType.name)
                     .append(System.lineSeparator())
                 logNode(rootNode, buffer, "")
-
-                var executor: ExecutorService? = null
-                try {
-                    executor = Executors.newSingleThreadExecutor()
-                    executor.execute { safelyWriteToLog(TAG, buffer.toString()) }
-                } finally {
-                    executor?.close()
-                }
+                safelyWriteToLog(TAG, buffer.toString())
             }
         }
 
