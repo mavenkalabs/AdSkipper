@@ -3,6 +3,7 @@ package com.mavenkalabs.adskipper.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.accessibilityservice.GestureDescription.StrokeDescription
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
@@ -17,18 +18,15 @@ import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
-import com.mavenkalabs.adskipper.util.AppLog.Companion.disable
 import com.mavenkalabs.adskipper.util.AppLog.Companion.e
-import com.mavenkalabs.adskipper.util.AppLog.Companion.enable
 import com.mavenkalabs.adskipper.util.AppLog.Companion.logAccessibilityEvent
 import com.mavenkalabs.adskipper.util.ConfigReader
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
+@SuppressLint("AccessibilityPolicy")
 class AdSkipperService : AccessibilityService() {
     private var muteAds = false
-
-    private var captureLogs = false
 
     private var adInProgress = false
 
@@ -76,9 +74,7 @@ class AdSkipperService : AccessibilityService() {
                         toggleMute(true)
                         adInProgress = true
                         AppLog.d(TAG, "onAccessibilityEvent: Detected ad")
-                        if (captureLogs) {
-                            logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
-                        }
+                        logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
                     }
                 }
 
@@ -96,7 +92,7 @@ class AdSkipperService : AccessibilityService() {
 
                 val conditionSatisfied = result.isPassed
                 val foundNodes = result.filteredNodes
-                if (conditionSatisfied && foundNodes != null && !foundNodes.isEmpty()) {
+                if (conditionSatisfied && !foundNodes.isNullOrEmpty()) {
                     foundNodes.stream()
                         .filter { it.isClickable && it.isEnabled }
                         .findFirst()
@@ -107,12 +103,10 @@ class AdSkipperService : AccessibilityService() {
                                 "onAccessibilityEvent: Skipped ad {0}",
                                 accessibilityNodeInfo.viewIdResourceName
                             )
-                            if (captureLogs) {
-                                logAccessibilityEvent(
-                                    rootInActiveWindow,
-                                    AppLog.EventType.SKIP
-                                )
-                            }
+                            logAccessibilityEvent(
+                                rootInActiveWindow,
+                                AppLog.EventType.SKIP
+                            )
                         })
                 }
             }
@@ -180,25 +174,16 @@ class AdSkipperService : AccessibilityService() {
     }
 
     public override fun onServiceConnected() {
-        enable(null) // enable ordinary logging
-
         val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         muteAds = prefs.getBoolean(MUTE_ADS_PREF, true)
+        if (prefs.getBoolean(CAPTURE_LOGS_PREF, false)) AppLog.enable() else AppLog.disable()
+
         val listener: OnSharedPreferenceChangeListener?
         prefs.registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener { p: SharedPreferences?, key: String? ->
             AppLog.d(TAG, "onServiceConnected: pref changed {0}", key)
             if (key == MUTE_ADS_PREF) {
                 muteAds = p!!.getBoolean(key, false)
                 AppLog.d(TAG, "onServiceConnected: muteAds now {0}", muteAds)
-            } else if (key == CAPTURE_LOGS_PREF) {
-                captureLogs = p!!.getBoolean(key, false)
-                if (!captureLogs) {
-                    disable()
-                    enable(null) // enable ordinary logging
-                } else {
-                    enable(applicationContext)
-                }
-                AppLog.d(TAG, "onServiceConnected: captureLogs now {0}", captureLogs)
             }
         }.also { listener = it })
         listenerRef.set(listener)
@@ -255,36 +240,13 @@ class AdSkipperService : AccessibilityService() {
                         }.toTypedArray())
             )
         )
-
-        /*
-        configReader = new ConfigReader(config -> {
-            packageClickRules.set(config.getClickRules().entrySet().stream().collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry -> rulesParser.orRules(
-                            entry.getValue().stream().map(s -> rulesParser.parse(s, entry.getKey())).toArray(BaseRule[]::new))
-            )));
-            packageMuteRules.set(config.getMuteRules().entrySet().stream().collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry -> rulesParser.orRules(
-                            entry.getValue().stream().map(s -> rulesParser.parse(s, entry.getKey())).toArray(BaseRule[]::new))
-            )));
-
-            AccessibilityServiceInfo serviceInfo = getServiceInfo();
-            Set<String> packages = new HashSet<>(config.getClickRules().keySet());
-            packages.addAll(config.getMuteRules().keySet());
-            serviceInfo.packageNames = packages.toArray(new String[0]);
-            setServiceInfo(serviceInfo);
-
-            AppLog.d(TAG, "Click rules are: {0}", packageClickRules.get());
-            AppLog.d(TAG, "Mute rules are: {0}", packageMuteRules.get());
-            AppLog.d(TAG, "Packages are: {0}", Arrays.asList(serviceInfo.packageNames));
-        });*/
     }
 
     companion object {
         const val MUTE_ADS_PREF: String = "mute_ads"
 
         const val CAPTURE_LOGS_PREF: String = "enable_logging"
+        const val DUMP_LOGS_PREF: String = "dump_logs"
 
         const val APP_CLICK_QUIET_INTERVAL: Int = 1000
 
