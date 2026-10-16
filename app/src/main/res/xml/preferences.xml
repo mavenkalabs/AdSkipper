@@ -11,4 +11,9 @@
         android:key="enable_logging"
         android:title="@string/enable_logging"
         android:summary="@string/enable_logging_desc"/>
+    <Preference
+        app:isPreferenceVisible="false"
+        android:key="dump_logs"
+        android:title="@string/dump_logs"
+        android:summary="@string/dump_logs_desc" />
 </PreferenceScreen>

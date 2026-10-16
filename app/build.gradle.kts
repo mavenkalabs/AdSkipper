@@ -1,19 +1,20 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
 android {
     namespace = "com.mavenkalabs.adskipper"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         testInstrumentationRunnerArguments += mapOf("clearPackageData" to "true")
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 20
-        versionName = "1.0.20"
+        targetSdk = 37
+        versionCode = 21
+        versionName = "1.0.21"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,41 +40,35 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_9
-        targetCompatibility = JavaVersion.VERSION_1_9
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
         viewBinding = true
     }
+}
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_9)
-        }
-    }
-    kotlinOptions {
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_1_9
-            targetCompatibility = JavaVersion.VERSION_1_9
-        }
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
 dependencies {
 
-    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("androidx.appcompat:appcompat:1.8.0")
     implementation("com.google.android.material:material:1.14.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.2.1")
-    implementation("androidx.navigation:navigation-fragment:2.9.8")
-    implementation("androidx.navigation:navigation-ui:2.9.8")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.2")
+    implementation("androidx.navigation:navigation-fragment:2.10.2")
+    implementation("androidx.navigation:navigation-ui:2.10.2")
     implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("androidx.annotation:annotation:1.10.0")
+    implementation("androidx.annotation:annotation:1.11.0")
     implementation("com.android.support.test:runner:1.0.2")
     implementation("androidx.preference:preference:1.2.1")
-    implementation("androidx.fragment:fragment:1.8.9")
-    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.fragment:fragment:1.9.1")
+    implementation("androidx.core:core-ktx:1.19.1")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20251224")
+    testImplementation("org.json:json:20260814")
     // Core library
     androidTestImplementation("androidx.test:core:1.7.0")
 
@@ -87,7 +82,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:truth:1.7.0")
 
     // uiautomator
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
     testImplementation(kotlin("test"))
-    testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
 }

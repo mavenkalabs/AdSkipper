@@ -1,7 +1,6 @@
 package com.mavenkalabs.adskipper.rules
 
 import android.view.accessibility.AccessibilityNodeInfo
-import java.util.function.Predicate
 import java.util.stream.Collectors
 
 class MultiRule(private val conditionality: Conditionality, vararg rules: BaseRule) : BaseRule {
@@ -12,18 +11,18 @@ class MultiRule(private val conditionality: Conditionality, vararg rules: BaseRu
         parameters: Map<String, Any>?
     ): RuleResult {
         val allFilteredNodes: MutableList<AccessibilityNodeInfo> = mutableListOf()
-        fun ruleCheck(): Predicate<in BaseRule> = { childRule ->
-            val result = childRule.apply(node, parameters)
+        fun ruleCheck(rule: BaseRule): Boolean {
+            val result = rule.apply(node, parameters)
             if (result.isPassed && result.filteredNodes?.isNotEmpty() == true) {
                 allFilteredNodes.addAll(result.filteredNodes)
             }
-            result.isPassed
+            return result.isPassed
         }
 
         val passed = if (conditionality == Conditionality.AND) {
-            childRules.stream().allMatch(ruleCheck())
+            childRules.all { ruleCheck(it) }
         } else {
-            childRules.stream().anyMatch(ruleCheck())
+            childRules.any { ruleCheck(it) }
         }
 
         return RuleResult(passed, if (passed) allFilteredNodes else null)

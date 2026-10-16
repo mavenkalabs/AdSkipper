@@ -5,12 +5,12 @@ import android.content.Context
 import android.net.Uri
 import org.junit.After
 import org.junit.Before
+import org.junit.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when` as whenever
 import org.mockito.MockitoAnnotations
 import java.nio.file.Files
-import kotlin.test.Test
 
 
 internal class AppLogTest {
@@ -39,27 +39,27 @@ internal class AppLogTest {
 
     @Test
     fun verifyMessageLoggingWithParams() {
-        AppLog.enable(null)
+        AppLog.enable()
         AppLog.d("TAG", "This is a {0} test with {1} and {2}", "Super", null, 1)
     }
 
 
     @Test
     fun verifyExceptionLogging() {
-        AppLog.enable(null)
+        AppLog.enable()
         AppLog.e("TAG", "This is a {0} test with {1} and {2}", Exception(),"Super", null, 1)
     }
 
     @Test
     fun verifyMessageLoggingWithParamsWithContext() {
-        AppLog.enable(mockContext)
+        AppLog.enable()
         AppLog.d("TAG", "This is a {0} test with {1} and {2}", "Super", null, 1)
     }
 
 
     @Test
     fun verifyExceptionLoggingWithContext() {
-        AppLog.enable(mockContext)
+        AppLog.enable()
         AppLog.e("TAG", "This is a {0} test with {1} and {2}", Exception(),"Super", null, 1)
     }
 }
