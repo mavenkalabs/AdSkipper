@@ -11,9 +11,8 @@ class NoRecentUserClickRule(val ruleAsString: String) : BaseRule {
         parameters: Map<String, Any>?
     ): RuleResult {
         if (parameters != null) {
-            val value1 = parameters[RULE_PARAM_LAST_USER_CLICK_TS]
-            if (value1 is Long) {
-                val clickTS = value1
+            val clickTS = parameters[RULE_PARAM_LAST_USER_CLICK_TS]
+            if (clickTS is Long) {
                 if (System.currentTimeMillis() > (clickTS + interval)) {
                     return RuleResult(true)
                 }

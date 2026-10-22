@@ -1,8 +1,10 @@
 package com.mavenkalabs.adskipper.rules
 
-abstract class BaseIdRule(id: String, packageName: String) : BaseRule {
-    protected val qualifiedId: String = "$packageName:id/$id"
+abstract class BaseIdRule(indexedId: String, packageName: String) : BaseRule {
+    private val idRegex = """^(.+?)(?:\[(\d+)])?$""".toRegex()
 
-    val id
-        get() = qualifiedId.split("/".toRegex()).last()
+    val id = idRegex.find(indexedId)?.groupValues[1]?:indexedId
+    val index = idRegex.find(indexedId)?.groupValues[2]?.toIntOrNull()
+
+    protected val qualifiedId: String = "$packageName:id/$id"
 }

@@ -115,7 +115,10 @@ class AppLog private constructor() : AutoCloseable {
 
             val childCount = node.childCount
             for (i in 0..<childCount) {
-                logNode(node.getChild(i), sbuf, prefix)
+                val childNode = node.getChild(i)
+                if (childNode != null) {
+                    logNode(childNode, sbuf, prefix)
+                }
             }
         }
 

@@ -94,19 +94,25 @@ class AdSkipperService : AccessibilityService() {
                 val foundNodes = result.filteredNodes
                 if (conditionSatisfied && !foundNodes.isNullOrEmpty()) {
                     foundNodes.stream()
-                        .filter { it.isClickable && it.isEnabled }
+                        .filter { it.isEnabled }
                         .findFirst()
                         .ifPresent(Consumer { accessibilityNodeInfo: AccessibilityNodeInfo ->
-                            tap(accessibilityNodeInfo)
-                            AppLog.d(
-                                TAG,
-                                "onAccessibilityEvent: Skipped ad {0}",
-                                accessibilityNodeInfo.viewIdResourceName
-                            )
-                            logAccessibilityEvent(
-                                rootInActiveWindow,
-                                AppLog.EventType.SKIP
-                            )
+                            var clickableNode: AccessibilityNodeInfo? = accessibilityNodeInfo
+                            while(clickableNode != null && !clickableNode.isClickable) {
+                                clickableNode = clickableNode.parent
+                            }
+                            if (clickableNode != null) {
+                                tap(accessibilityNodeInfo)
+                                AppLog.d(
+                                    TAG,
+                                    "onAccessibilityEvent: Skipped ad {0}",
+                                    accessibilityNodeInfo.viewIdResourceName
+                                )
+                                logAccessibilityEvent(
+                                    rootInActiveWindow,
+                                    AppLog.EventType.SKIP
+                                )
+                            }
                         })
                 }
             }
@@ -195,7 +201,9 @@ class AdSkipperService : AccessibilityService() {
                     rulesParser.orRules(
                         *listOf(
                             "skip_ad_button",
-                            "modern_miniplayer_skip_ad_button"
+                            "modern_miniplayer_skip_ad_button",
+                            "overflow_button&expanded_cta_buttons&!player_learn_more_button",
+                            "list_item_text[1]&_ruleid_no_recent_user_click,2000"
                         ).map
                         { rulesParser.parse(it, "com.google.android.youtube") }
                             .toTypedArray()),
