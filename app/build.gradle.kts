@@ -63,7 +63,6 @@ dependencies {
     implementation("androidx.navigation:navigation-ui:2.10.2")
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.annotation:annotation:1.11.0")
-    implementation("com.android.support.test:runner:1.0.2")
     implementation("androidx.preference:preference:1.2.1")
     implementation("androidx.fragment:fragment:1.9.1")
     implementation("androidx.core:core-ktx:1.19.1")
