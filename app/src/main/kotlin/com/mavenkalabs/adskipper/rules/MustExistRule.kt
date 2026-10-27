@@ -7,7 +7,10 @@ class MustExistRule(id: String, packageName: String) : BaseIdRule(id, packageNam
         node: AccessibilityNodeInfo,
         parameters: Map<String, Any>?
     ): RuleResult {
-        val nodes = node.findAccessibilityNodeInfosByViewId(this.qualifiedId)
+        var nodes = node.findAccessibilityNodeInfosByViewId(this.qualifiedId)
+        if (index != null) {
+            nodes = nodes.filterIndexed { i, _ ->  i == index}
+        }
         return RuleResult(nodes?.isNotEmpty() == true, nodes)
     }
 

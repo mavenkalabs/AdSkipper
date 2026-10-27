@@ -13,8 +13,8 @@ android {
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
         targetSdk = 37
-        versionCode = 21
-        versionName = "1.0.21"
+        versionCode = 22
+        versionName = "1.0.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -32,7 +32,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -63,7 +64,6 @@ dependencies {
     implementation("androidx.navigation:navigation-ui:2.10.2")
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.annotation:annotation:1.11.0")
-    implementation("com.android.support.test:runner:1.0.2")
     implementation("androidx.preference:preference:1.2.1")
     implementation("androidx.fragment:fragment:1.9.1")
     implementation("androidx.core:core-ktx:1.19.1")
