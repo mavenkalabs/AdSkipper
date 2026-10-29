@@ -28,4 +28,7 @@
     <string name="premium_buy_subscription_label">Buy</string>
     <string name="premium_restore_subscription_label">Restore previous purchase</string>
     <string name="premium_cancel_subscription_label">Cancel subscription</string>
+    <string name="error_restore_subscription">Failed to restore subscription</string>
+    <string name="error_purchase_subscription">Failed to purchase subscription</string>
+    <string name="error_cancel_subscription">Failed to cancel subscription</string>
 </resources>

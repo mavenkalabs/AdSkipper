@@ -41,6 +41,7 @@ class ProUtils private constructor() {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(intent)
+                    return true
                 } catch (e: Exception) {
                     AppLog.e(TAG, e.message?:e.toString(), e)
                 }

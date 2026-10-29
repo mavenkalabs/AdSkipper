@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.ProgressBar
 import androidx.core.content.edit
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentContainerView
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.preference.PreferenceManager
@@ -23,6 +24,7 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
         private val TAG = ServiceEnabledFragment::class.java.name
     }
     private lateinit var loadingSpinner: ProgressBar
+    private lateinit var childFragment: FragmentContainerView
 
     override fun onResume() {
         super.onResume()
@@ -36,7 +38,13 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         loadingSpinner = view.findViewById(R.id.premium_status_spinner)
+        childFragment = view.findViewById(R.id.premium_fragment_container)
+
+        childFragmentManager.setFragmentResultListener("refreshPremiumStatus", this) { _, _ ->
+            checkPremiumStatus()
+        }
 
         val buttonGotoA11ySettings = view.findViewById<Button>(R.id.button_goto_a11y_settings)
         buttonGotoA11ySettings?.setOnClickListener { _: View? ->
@@ -54,6 +62,7 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
 
     private fun checkPremiumStatus() {
         loadingSpinner.visibility = View.VISIBLE
+        childFragment.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -78,6 +87,7 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
                 }
             } finally {
                 loadingSpinner.visibility = View.GONE
+                childFragment.visibility = View.VISIBLE
             }
         }
     }

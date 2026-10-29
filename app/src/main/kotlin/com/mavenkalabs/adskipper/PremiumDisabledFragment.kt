@@ -7,6 +7,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mavenkalabs.adskipper.util.ProUtils
@@ -63,9 +64,11 @@ class PremiumDisabledFragment : Fragment(R.layout.fragment_premium_disabled) {
                         if (!success) {
                             Toast.makeText(
                                 requireContext(),
-                                "Failed to restore subscription",
+                                getString(R.string.error_restore_subscription),
                                 Toast.LENGTH_SHORT
                             ).show()
+                        } else {
+                            parentFragmentManager.setFragmentResult("refreshPremiumStatus", bundleOf())
                         }
                     } finally {
                         buttonRestorePurchase.isEnabled = true
@@ -86,9 +89,11 @@ class PremiumDisabledFragment : Fragment(R.layout.fragment_premium_disabled) {
                                 if (!purchaseSuccess) {
                                     Toast.makeText(
                                         requireContext(),
-                                        "Failed to purchase subscription",
+                                        getString(R.string.error_purchase_subscription),
                                         Toast.LENGTH_SHORT
                                     ).show()
+                                } else {
+                                    parentFragmentManager.setFragmentResult("refreshPremiumStatus", bundleOf())
                                 }
                             } finally {
                                 buttonBuy.isEnabled = true
