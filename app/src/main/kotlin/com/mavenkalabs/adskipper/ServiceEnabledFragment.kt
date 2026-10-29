@@ -4,27 +4,25 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.provider.Settings.SettingNotFoundException
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ProgressBar
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.preference.PreferenceManager
-import com.mavenkalabs.adskipper.databinding.FragmentServiceEnabledBinding
 import com.mavenkalabs.adskipper.service.AdSkipperService
+import com.mavenkalabs.adskipper.util.AppLog
+import com.mavenkalabs.adskipper.util.ProUtils
+import kotlinx.coroutines.launch
 import java.util.Arrays
-import androidx.core.content.edit
 
-class ServiceEnabledFragment : Fragment() {
-    private var binding: FragmentServiceEnabledBinding? = null
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        binding = FragmentServiceEnabledBinding.inflate(inflater, container, false)
-        return binding?.getRoot()
+class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
+    companion object {
+        private val TAG = ServiceEnabledFragment::class.java.name
     }
+    private lateinit var loadingSpinner: ProgressBar
 
     override fun onResume() {
         super.onResume()
@@ -38,8 +36,10 @@ class ServiceEnabledFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        loadingSpinner = view.findViewById(R.id.premium_status_spinner)
 
-        binding?.buttonGotoA11ySettings?.setOnClickListener { v: View? ->
+        val buttonGotoA11ySettings = view.findViewById<Button>(R.id.button_goto_a11y_settings)
+        buttonGotoA11ySettings?.setOnClickListener { _: View? ->
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }
@@ -48,12 +48,40 @@ class ServiceEnabledFragment : Fragment() {
         if (!prefs.contains(AdSkipperService.MUTE_ADS_PREF)) {
             prefs.edit { putBoolean(AdSkipperService.MUTE_ADS_PREF, true) }
         }
+
+        checkPremiumStatus()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        binding = null
+    private fun checkPremiumStatus() {
+        loadingSpinner.visibility = View.VISIBLE
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val isPro = ProUtils.isPro()
+                if (isPro) {
+                    childFragmentManager.beginTransaction()
+                        .setReorderingAllowed(true)
+                        .replace(R.id.premium_fragment_container, PremiumEnabledFragment())
+                        .commit()
+                } else {
+                    childFragmentManager.beginTransaction()
+                        .setReorderingAllowed(true)
+                        .replace(R.id.premium_fragment_container, PremiumDisabledFragment())
+                        .commit()
+                }
+            } catch (e: Exception) {
+                AppLog.e(TAG, e.message ?: e.toString(), e)
+
+                val existingChild = childFragmentManager.findFragmentById(R.id.premium_fragment_container)
+                if (existingChild != null) {
+                    childFragmentManager.beginTransaction().remove(existingChild).commit()
+                }
+            } finally {
+                loadingSpinner.visibility = View.GONE
+            }
+        }
     }
+
 
     private val isA11yServiceEnabled: Boolean
         get() {
@@ -70,7 +98,7 @@ class ServiceEnabledFragment : Fragment() {
                         Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
                     )
                     if (settingValue != null) {
-                        return Arrays.stream<String?>(
+                        return Arrays.stream(
                             settingValue.split(":".toRegex()).dropLastWhile { it.isEmpty() }
                                 .toTypedArray())
                             .anyMatch { s: String? -> s.equals(service, ignoreCase = true) }
