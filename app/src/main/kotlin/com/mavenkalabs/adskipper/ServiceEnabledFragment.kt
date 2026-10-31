@@ -16,6 +16,7 @@ import androidx.preference.PreferenceManager
 import com.mavenkalabs.adskipper.service.AdSkipperService
 import com.mavenkalabs.adskipper.util.AppLog
 import com.mavenkalabs.adskipper.util.ProUtils
+import com.revenuecat.purchases.models.StoreProduct
 import kotlinx.coroutines.launch
 import java.util.Arrays
 
@@ -25,6 +26,8 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
     }
     private lateinit var loadingSpinner: ProgressBar
     private lateinit var childFragment: FragmentContainerView
+
+    private var showPremiumEnabledFragment = false
 
     override fun onResume() {
         super.onResume()
@@ -43,6 +46,7 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
         childFragment = view.findViewById(R.id.premium_fragment_container)
 
         childFragmentManager.setFragmentResultListener("refreshPremiumStatus", this) { _, _ ->
+            showPremiumEnabledFragment = true
             checkPremiumStatus()
         }
 
@@ -65,18 +69,21 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
         childFragment.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
+            var products : List<StoreProduct> = emptyList()
             try {
-                val isPro = ProUtils.isPro()
-                if (isPro) {
-                    childFragmentManager.beginTransaction()
-                        .setReorderingAllowed(true)
-                        .replace(R.id.premium_fragment_container, PremiumEnabledFragment())
-                        .commit()
-                } else {
-                    childFragmentManager.beginTransaction()
-                        .setReorderingAllowed(true)
-                        .replace(R.id.premium_fragment_container, PremiumDisabledFragment())
-                        .commit()
+                products = ProUtils.getProducts()
+                if (products.isNotEmpty()) {
+                    if (showPremiumEnabledFragment) {
+                        childFragmentManager.beginTransaction()
+                            .setReorderingAllowed(true)
+                            .replace(R.id.premium_fragment_container, PremiumEnabledFragment())
+                            .commit()
+                    } else {
+                        childFragmentManager.beginTransaction()
+                            .setReorderingAllowed(true)
+                            .replace(R.id.premium_fragment_container, PremiumDisabledFragment())
+                            .commit()
+                    }
                 }
             } catch (e: Exception) {
                 AppLog.e(TAG, e.message ?: e.toString(), e)
@@ -87,7 +94,9 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
                 }
             } finally {
                 loadingSpinner.visibility = View.GONE
-                childFragment.visibility = View.VISIBLE
+                if (products.isNotEmpty()) {
+                    childFragment.visibility = View.VISIBLE
+                }
             }
         }
     }

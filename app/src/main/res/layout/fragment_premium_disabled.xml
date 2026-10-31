@@ -5,8 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_gravity="center"
-    app:strokeWidth="2dp"
-    android:padding="16dp">
+    app:strokeWidth="2dp">
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -39,47 +38,39 @@
             android:id="@+id/layout_purchase_subscription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingVertical="8dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/button_restore_purchase">
+            app:layout_constraintBottom_toBottomOf="parent">
 
-            <Spinner
-                android:id="@+id/spinner_premium_subscription"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:layout_weight="1"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"/>
 
-            <Space
-                android:layout_width="16dp"
-                android:layout_height="0dp"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_buy"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:textAllCaps="true"
                 android:text="@string/premium_buy_subscription_label"
                 app:cornerRadius="4dp"
                 />
-        </LinearLayout>
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/button_restore_purchase"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAllCaps="true"
-            android:text="@string/premium_restore_subscription_label"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            style="@style/Widget.Material3Expressive.Button.TextButton"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
 
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_review"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:textAllCaps="true"
+                android:text="@string/premium_review_label"
+                style="@style/Widget.Material3Expressive.Button.OutlinedButton"
+                app:cornerRadius="4dp"
+                />
+        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
