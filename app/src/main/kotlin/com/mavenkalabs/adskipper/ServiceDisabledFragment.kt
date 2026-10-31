@@ -4,26 +4,14 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.provider.Settings.SettingNotFoundException
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
+import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.NavHostFragment
-import com.mavenkalabs.adskipper.databinding.FragmentServiceDisabledBinding
 import com.mavenkalabs.adskipper.service.AdSkipperService
 import java.util.Arrays
 
-class ServiceDisabledFragment : Fragment() {
-    private var binding: FragmentServiceDisabledBinding? = null
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        binding = FragmentServiceDisabledBinding.inflate(inflater, container, false)
-        return binding?.getRoot()
-    }
-
+class ServiceDisabledFragment : Fragment(R.layout.fragment_service_disabled) {
     override fun onResume() {
         super.onResume()
 
@@ -37,23 +25,22 @@ class ServiceDisabledFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding?.buttonAgree?.setOnClickListener { v: View? ->
+        val buttonAgree = view.findViewById<Button>(R.id.button_agree)
+        val buttonDisagree = view.findViewById<Button>(R.id.button_disagree)
+        val buttonTutorial = view.findViewById<Button>(R.id.button_tutorial)
+
+        buttonAgree?.setOnClickListener { _: View? ->
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }
 
-        binding?.buttonDisagree?.setOnClickListener { v: View? -> requireActivity().finishAndRemoveTask() }
+        buttonDisagree?.setOnClickListener { _: View? -> requireActivity().finishAndRemoveTask() }
 
-        binding?.buttonTutorial?.setOnClickListener { v: View? ->
+        buttonTutorial?.setOnClickListener { _: View? ->
             TutorialFragment().show(
                 getChildFragmentManager(), TutorialFragment.TAG
             )
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        binding = null
     }
 
     private val isA11yServiceEnabled: Boolean
@@ -71,7 +58,7 @@ class ServiceDisabledFragment : Fragment() {
                         /* name = */ Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
                     )
                     if (settingValue != null) {
-                        return Arrays.stream<String?>(
+                        return Arrays.stream(
                             settingValue.split(":".toRegex()).dropLastWhile { it.isEmpty() }
                                 .toTypedArray())
                             .anyMatch { s: String? -> s.equals(service, ignoreCase = true) }

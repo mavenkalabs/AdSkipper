@@ -18,8 +18,6 @@ import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
-import com.mavenkalabs.adskipper.util.AppLog.Companion.e
-import com.mavenkalabs.adskipper.util.AppLog.Companion.logAccessibilityEvent
 import com.mavenkalabs.adskipper.util.ConfigReader
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
@@ -74,7 +72,7 @@ class AdSkipperService : AccessibilityService() {
                         toggleMute(true)
                         adInProgress = true
                         AppLog.d(TAG, "onAccessibilityEvent: Detected ad")
-                        logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
+                        AppLog.logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
                     }
                 }
 
@@ -108,7 +106,7 @@ class AdSkipperService : AccessibilityService() {
                                     "onAccessibilityEvent: Skipped ad {0}",
                                     accessibilityNodeInfo.viewIdResourceName
                                 )
-                                logAccessibilityEvent(
+                                AppLog.logAccessibilityEvent(
                                     rootInActiveWindow,
                                     AppLog.EventType.SKIP
                                 )
@@ -117,7 +115,7 @@ class AdSkipperService : AccessibilityService() {
                 }
             }
         } catch (e: Exception) {
-            e(TAG, "Unexpected error", e)
+            AppLog.e(TAG, "Unexpected error", e)
         }
     }
 
@@ -174,7 +172,7 @@ class AdSkipperService : AccessibilityService() {
             try {
                 configReader.close()
             } catch (e: Exception) {
-                e(TAG, e.message!!, e)
+                AppLog.e(TAG, e.message!!, e)
             }
         }
     }

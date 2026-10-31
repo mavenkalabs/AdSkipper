@@ -127,7 +127,7 @@ internal class MainActivityTests {
             Until.hasObject(
                 By.text(
                     ApplicationProvider.getApplicationContext<Context>()
-                        .getString(R.string.a11y_service_enabled_message)
+                        .getString(R.string.a11y_service_enabled_message1)
                 )
             ), 10000
         )
@@ -210,7 +210,7 @@ internal class MainActivityTests {
         found = uiDevice.hasObject(
             By.text(
                 ApplicationProvider.getApplicationContext<Context>()
-                    .getString(R.string.a11y_service_enabled_message)
+                    .getString(R.string.a11y_service_enabled_message1)
             )
         )
         assertTrue(found)

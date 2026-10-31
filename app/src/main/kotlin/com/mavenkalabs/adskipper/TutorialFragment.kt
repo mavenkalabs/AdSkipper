@@ -29,7 +29,7 @@ class TutorialFragment : DialogFragment() {
                     + (if (nightMode) R.raw.tutorial_dark else R.raw.tutorial_light)).toUri()
         )
         binding?.videoTutorial?.start()
-        binding?.videoTutorial?.setOnCompletionListener { player: MediaPlayer? -> dismiss() }
+        binding?.videoTutorial?.setOnCompletionListener { _: MediaPlayer? -> dismiss() }
 
         return binding?.getRoot()
     }
