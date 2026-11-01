@@ -2,10 +2,13 @@ package com.mavenkalabs.adskipper.util
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
@@ -14,6 +17,14 @@ import com.revenuecat.purchases.models.StoreProduct
 
 class ProUtils private constructor() {
     companion object {
+        private const val REVCAT_API_KEY = "goog_ycweEQBgTzAUEvLkxXeHaUmXILc"
+
+        fun initPurchases(context: Context) {
+            Purchases.logLevel = LogLevel.DEBUG
+            Purchases.configure(PurchasesConfiguration.Builder(context, REVCAT_API_KEY)
+                .build())
+        }
+
         @JvmStatic
         suspend fun getProducts(): List<StoreProduct> {
             val offerings = Purchases.sharedInstance.awaitOfferings()

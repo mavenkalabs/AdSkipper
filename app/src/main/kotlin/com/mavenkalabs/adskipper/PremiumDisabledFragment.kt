@@ -3,7 +3,6 @@ package com.mavenkalabs.adskipper
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
-import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -36,13 +35,7 @@ class PremiumDisabledFragment : Fragment(R.layout.fragment_premium_disabled) {
                         try {
                             val purchaseSuccess =
                                 ProUtils.purchaseProduct(requireActivity(), productForPurchase)
-                            if (!purchaseSuccess) {
-                                Toast.makeText(
-                                    requireContext(),
-                                    getString(R.string.error_purchase_subscription),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
+                            if (purchaseSuccess) {
                                 parentFragmentManager.setFragmentResult("refreshPremiumStatus", bundleOf())
                             }
                         } finally {
