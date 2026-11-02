@@ -2,6 +2,7 @@ package com.mavenkalabs.adskipper.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.graphics.Rect
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -108,10 +109,8 @@ class AppLog private constructor() : AutoCloseable {
 
         private fun logNode(node: AccessibilityNodeInfo, sbuf: StringBuilder, prefix: String) {
             var prefix = prefix
-            if (node.viewIdResourceName != null) {
-                sbuf.append(prefix).append(node).append(System.lineSeparator())
-                prefix = "$prefix "
-            }
+            sbuf.append(prefix).append(stringifyNode(node)).append(System.lineSeparator())
+            prefix = "$prefix "
 
             val childCount = node.childCount
             for (i in 0..<childCount) {
@@ -122,6 +121,20 @@ class AppLog private constructor() : AutoCloseable {
             }
         }
 
+        fun stringifyNode(node: AccessibilityNodeInfo) : String {
+            val buffer = StringBuilder()
+            val bounds = Rect()
+            node.getBoundsInScreen(bounds)
+            node.packageName?.let { buffer.append("packageName: ").append(node.packageName) }
+            node.className?.let { buffer.append("; className: ").append(node.className) }
+            node.text?.let { buffer.append("; text: ").append(node.text) }
+            node.contentDescription?.let { buffer.append("; contentDescription: ").append(node.contentDescription) }
+            node.viewIdResourceName?.let { buffer.append("; viewIdResName: ").append(node.viewIdResourceName) }
+            buffer.append("; bounds: ").append(bounds)
+            buffer.append("; clickable: ").append(node.isClickable)
+            buffer.append("; enabled: ").append(node.isEnabled)
+            return buffer.toString()
+        }
 
         fun d(tag: String, message: String, vararg args: Any?) {
             if (instance.enabledRef.get()) {

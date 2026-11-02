@@ -100,11 +100,11 @@ class AdSkipperService : AccessibilityService() {
                                 clickableNode = clickableNode.parent
                             }
                             if (clickableNode != null) {
-                                tap(accessibilityNodeInfo)
+                                tap(clickableNode)
                                 AppLog.d(
                                     TAG,
                                     "onAccessibilityEvent: Skipped ad {0}",
-                                    accessibilityNodeInfo.viewIdResourceName
+                                    AppLog.stringifyNode(clickableNode)
                                 )
                                 AppLog.logAccessibilityEvent(
                                     rootInActiveWindow,
@@ -122,21 +122,22 @@ class AdSkipperService : AccessibilityService() {
     private fun tap(node: AccessibilityNodeInfo) {
         lastAppClickTS = System.currentTimeMillis()
 
-        val nodeBounds = Rect()
-        node.getBoundsInScreen(nodeBounds)
-        val tapPath = Path()
-        tapPath.moveTo(nodeBounds.centerX().toFloat(), nodeBounds.centerY().toFloat())
-        val tapStroke =
-            StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout().toLong())
-
-        val gestureBuilder = GestureDescription.Builder()
-        gestureBuilder.addStroke(tapStroke)
-        val success = dispatchGesture(gestureBuilder.build(), null, null)
+        val success = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
 
         // try click action if gesture doesn't succeed
         if (!success) {
-            AppLog.d(TAG, "Click gesture didn't work. Using performAction")
-            node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            AppLog.d(TAG, "performAction didn't work. Using click gesture")
+
+            val nodeBounds = Rect()
+            node.getBoundsInScreen(nodeBounds)
+            val tapPath = Path()
+            tapPath.moveTo(nodeBounds.centerX().toFloat(), nodeBounds.centerY().toFloat())
+            val tapStroke =
+                StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout().toLong())
+
+            val gestureBuilder = GestureDescription.Builder()
+            gestureBuilder.addStroke(tapStroke)
+            dispatchGesture(gestureBuilder.build(), null, null)
         }
     }
 
