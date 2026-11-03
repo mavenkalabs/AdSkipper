@@ -8,7 +8,10 @@ class MustNotExistRule(id: String, packageName: String) : BaseIdRule(id, package
         node: AccessibilityNodeInfo,
         parameters: Map<String, Any>?
     ): RuleResult {
-        val nodes = node.findAccessibilityNodeInfosByViewId(this.qualifiedId)
+        var nodes = node.findAccessibilityNodeInfosByViewId(this.qualifiedId)
+        if (index != null) {
+            nodes = nodes.filterIndexed { i, _ ->  i == index}
+        }
         return RuleResult(nodes == null || nodes.isEmpty())
     }
 

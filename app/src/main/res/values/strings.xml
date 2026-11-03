@@ -7,9 +7,10 @@
     <string name="tutorial_fragment_label">Tutorial Fragment</string>
 
     <string name="a11y_service_disabled_message">Ad Skipper is an app that automates clicking the Skip Ads button that appears in certain video apps.\n\nIt uses Accessibility features to scan window content, detect the Skip Ads button and then click on the Skip Ads button on your behalf.\n\nAd Skipper does not use or share any of your personal information or data.\n \nClick on Agree to continue and enable the service in Accessibility Settings.</string>
-    <string name="a11y_service_enabled_message">Ad Skipper is ready for use. You can disable it in Accessibility Settings.</string>
-    <string name="go_to_a11y_settings">Go to Accessibility Settings</string>
-    <string name="agree">Agree</string>
+    <string name="a11y_service_enabled_message1">Ad Skipper is now ready for use.</string>
+    <string name="a11y_service_enabled_message2">You can close this. App will run in the background..\nGo to Settings > Accessibility to disable.</string>
+    <string name="go_to_a11y_settings">Accessibility Settings</string>
+    <string name="agree">Agree   </string>
     <string name="disagree">Disagree</string>
     <string name="mute_ads">Mute Ads</string>
     <string name="mute_ads_desc">Mute volume on advertisements</string>
@@ -20,4 +21,15 @@
     <string name="dump_logs">Save logs</string>
     <string name="dump_logs_desc">Saves debug logs to Downloads</string>
     <string name="dump_logs_success_msg">Logs saved to Downloads</string>
+    <string name="premium_customer_thanks">Thanks for supporting us!</string>
+    <string name="premium_customer_settings">Access premium features in Accessibility Settings</string>
+    <string name="premium_subscription_prompt1">Like the app? Support us!</string>
+    <string name="premium_subscription_prompt2">Your support helps us make it better</string>
+    <string name="premium_buy_subscription_label">Buy coffee</string>
+    <string name="premium_review_label">Rate app</string>
+    <string name="premium_restore_subscription_label">Restore previous purchase</string>
+    <string name="premium_cancel_subscription_label">Cancel subscription</string>
+    <string name="error_restore_subscription">Failed to restore subscription</string>
+    <string name="error_purchase_subscription">Purchase failed</string>
+    <string name="error_cancel_subscription">Failed to cancel subscription</string>
 </resources>

@@ -18,8 +18,6 @@ import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
-import com.mavenkalabs.adskipper.util.AppLog.Companion.e
-import com.mavenkalabs.adskipper.util.AppLog.Companion.logAccessibilityEvent
 import com.mavenkalabs.adskipper.util.ConfigReader
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
@@ -74,7 +72,7 @@ class AdSkipperService : AccessibilityService() {
                         toggleMute(true)
                         adInProgress = true
                         AppLog.d(TAG, "onAccessibilityEvent: Detected ad")
-                        logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
+                        AppLog.logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
                     }
                 }
 
@@ -102,13 +100,13 @@ class AdSkipperService : AccessibilityService() {
                                 clickableNode = clickableNode.parent
                             }
                             if (clickableNode != null) {
-                                tap(accessibilityNodeInfo)
+                                tap(clickableNode)
                                 AppLog.d(
                                     TAG,
                                     "onAccessibilityEvent: Skipped ad {0}",
-                                    accessibilityNodeInfo.viewIdResourceName
+                                    clickableNode
                                 )
-                                logAccessibilityEvent(
+                                AppLog.logAccessibilityEvent(
                                     rootInActiveWindow,
                                     AppLog.EventType.SKIP
                                 )
@@ -117,28 +115,29 @@ class AdSkipperService : AccessibilityService() {
                 }
             }
         } catch (e: Exception) {
-            e(TAG, "Unexpected error", e)
+            AppLog.e(TAG, "Unexpected error", e)
         }
     }
 
     private fun tap(node: AccessibilityNodeInfo) {
         lastAppClickTS = System.currentTimeMillis()
 
-        val nodeBounds = Rect()
-        node.getBoundsInScreen(nodeBounds)
-        val tapPath = Path()
-        tapPath.moveTo(nodeBounds.centerX().toFloat(), nodeBounds.centerY().toFloat())
-        val tapStroke =
-            StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout().toLong())
-
-        val gestureBuilder = GestureDescription.Builder()
-        gestureBuilder.addStroke(tapStroke)
-        val success = dispatchGesture(gestureBuilder.build(), null, null)
+        val success = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
 
         // try click action if gesture doesn't succeed
         if (!success) {
-            AppLog.d(TAG, "Click gesture didn't work. Using performAction")
-            node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            AppLog.d(TAG, "performAction didn't work. Using click gesture")
+
+            val nodeBounds = Rect()
+            node.getBoundsInScreen(nodeBounds)
+            val tapPath = Path()
+            tapPath.moveTo(nodeBounds.centerX().toFloat(), nodeBounds.centerY().toFloat())
+            val tapStroke =
+                StrokeDescription(tapPath, 0, ViewConfiguration.getTapTimeout().toLong())
+
+            val gestureBuilder = GestureDescription.Builder()
+            gestureBuilder.addStroke(tapStroke)
+            dispatchGesture(gestureBuilder.build(), null, null)
         }
     }
 
@@ -174,7 +173,7 @@ class AdSkipperService : AccessibilityService() {
             try {
                 configReader.close()
             } catch (e: Exception) {
-                e(TAG, e.message!!, e)
+                AppLog.e(TAG, e.message!!, e)
             }
         }
     }
