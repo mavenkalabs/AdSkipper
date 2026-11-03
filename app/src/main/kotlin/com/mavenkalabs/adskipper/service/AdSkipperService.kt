@@ -104,7 +104,7 @@ class AdSkipperService : AccessibilityService() {
                                 AppLog.d(
                                     TAG,
                                     "onAccessibilityEvent: Skipped ad {0}",
-                                    AppLog.stringifyNode(clickableNode)
+                                    clickableNode
                                 )
                                 AppLog.logAccessibilityEvent(
                                     rootInActiveWindow,

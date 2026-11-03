@@ -107,6 +107,27 @@ class AppLog private constructor() : AutoCloseable {
             }
         }
 
+        fun d(tag: String, message: String, vararg args: Any?) {
+            if (instance.enabledRef.get()) {
+                val formattedMessage = MessageFormat.format(message, *args)
+                Log.d(tag, formattedMessage)
+                safelyWriteToLog(tag, formattedMessage)
+            }
+        }
+        @JvmStatic
+        fun e(tag: String, message: String, t: Throwable, vararg args: Any?) {
+            if (instance.enabledRef.get()) {
+                val formattedMessage = MessageFormat.format(message, *args)
+                Log.e(tag, formattedMessage, t)
+                safelyWriteToLog(tag, formattedMessage)
+                safelyWriteToLog(tag, t.message)
+                safelyWriteToLog(
+                    tag,
+                    Arrays.stream(t.stackTrace)
+                        .map<String> { it.toString() }
+                        .collect(Collectors.joining(System.lineSeparator())))
+            }
+        }
         private fun logNode(node: AccessibilityNodeInfo, sbuf: StringBuilder, prefix: String) {
             var prefix = prefix
             sbuf.append(prefix).append(stringifyNode(node)).append(System.lineSeparator())
@@ -121,7 +142,7 @@ class AppLog private constructor() : AutoCloseable {
             }
         }
 
-        fun stringifyNode(node: AccessibilityNodeInfo) : String {
+        private fun stringifyNode(node: AccessibilityNodeInfo) : String {
             val buffer = StringBuilder()
             val bounds = Rect()
             node.getBoundsInScreen(bounds)
@@ -134,14 +155,6 @@ class AppLog private constructor() : AutoCloseable {
             buffer.append("; clickable: ").append(node.isClickable)
             buffer.append("; enabled: ").append(node.isEnabled)
             return buffer.toString()
-        }
-
-        fun d(tag: String, message: String, vararg args: Any?) {
-            if (instance.enabledRef.get()) {
-                val formattedMessage = MessageFormat.format(message, *args)
-                Log.d(tag, formattedMessage)
-                safelyWriteToLog(tag, formattedMessage)
-            }
         }
 
         private fun safelyWriteToLog(tag: String, formattedMessage: String?) {
@@ -159,21 +172,6 @@ class AppLog private constructor() : AutoCloseable {
                 }
             } catch (_: Throwable) {
                 // ignore
-            }
-        }
-
-        @JvmStatic
-        fun e(tag: String, message: String, t: Throwable, vararg args: Any?) {
-            if (instance.enabledRef.get()) {
-                val formattedMessage = MessageFormat.format(message, *args)
-                Log.e(tag, formattedMessage, t)
-                safelyWriteToLog(tag, formattedMessage)
-                safelyWriteToLog(tag, t.message)
-                safelyWriteToLog(
-                    tag,
-                    Arrays.stream<StackTraceElement>(t.stackTrace)
-                        .map<String> { it.toString() }
-                        .collect(Collectors.joining(System.lineSeparator())))
             }
         }
     }

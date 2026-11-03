@@ -8,8 +8,8 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
-import org.mockito.Mockito.`when` as whenever
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.whenever
 import java.nio.file.Files
 
 
@@ -61,5 +61,11 @@ internal class AppLogTest {
     fun verifyExceptionLoggingWithContext() {
         AppLog.enable()
         AppLog.e("TAG", "This is a {0} test with {1} and {2}", Exception(),"Super", null, 1)
+    }
+
+
+    @Test
+    fun verifyDump() {
+        AppLog.dump(mockContext)
     }
 }
