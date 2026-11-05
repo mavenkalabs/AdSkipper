@@ -4,15 +4,22 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.accessibilityservice.GestureDescription.StrokeDescription
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.graphics.Path
 import android.graphics.Rect
 import android.media.AudioManager
+import android.os.Build
 import android.view.ViewConfiguration
+import android.view.WindowManager
+import android.view.WindowMetrics
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
@@ -46,6 +53,14 @@ class AdSkipperService : AccessibilityService() {
 
     private val packageMuteRules = AtomicReference<MutableMap<String, BaseRule>?>()
 
+    private val commandReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == "${context?.packageName}.ACCESSIBILITY_COMMAND") {
+                val command = intent.getStringExtra("EXTRA_COMMAND")
+                onCommand(command)
+            }
+        }
+    }
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {
             if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
@@ -119,6 +134,64 @@ class AdSkipperService : AccessibilityService() {
         }
     }
 
+    private fun onCommand(command: String?) {
+        when (command) {
+            "ACTION_TRIGGER_SWIPE_UP" -> {  performSwipe(true) }
+            "ACTION_TRIGGER_SWIPE_DOWN" -> {  performSwipe(false) }
+        }
+    }
+
+    // Assumes this function lives inside your class extending AccessibilityService
+    private fun performSwipe(up: Boolean = false) {
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+
+        val screenWidth: Int
+        val screenHeight: Int
+
+        // 1. Resolve screen metrics safely across varying Android SDK baselines
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val windowMetrics: WindowMetrics = windowManager.currentWindowMetrics
+            val bounds: Rect = windowMetrics.bounds
+            screenWidth = bounds.width()
+            screenHeight = bounds.height()
+        } else {
+            // Legacy metric gathering fallback for older engine baselines
+            val displayMetrics = android.util.DisplayMetrics()
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+            screenWidth = displayMetrics.widthPixels
+            screenHeight = displayMetrics.heightPixels
+        }
+        // 1. Establish structural coordinates based on screen bounds
+        val startX = screenWidth / 2f
+        val startY = if (up) screenHeight * 0.8f else screenHeight * 0.2f // Start 80% down the screen
+        val endX = screenWidth / 2f
+        val endY = if (up) screenHeight * 0.2f else screenHeight * 0.8f   // End 20% down from the top
+
+        // 2. Map out the linear trajectory path
+        val swipePath = Path().apply {
+            moveTo(startX, startY)
+            lineTo(endX, endY)
+        }
+
+        /*
+         * 3. Construct the Gesture Stroke
+         * Parameter 1: The drawn path trajectory
+         * Parameter 2: Start delay in milliseconds (0 means execute instantly)
+         * Parameter 3: Stroke duration in milliseconds (300ms is standard for a quick swipe)
+         */
+        val strokeDescription = StrokeDescription(swipePath, 0, 300)
+
+        // 4. Build the immutable gesture manifest
+        val gestureBuilder = GestureDescription.Builder().apply {
+            addStroke(strokeDescription)
+        }
+        val gestureDescription = gestureBuilder.build()
+
+        // 5. Fire the gesture down into the active window pipeline
+        dispatchGesture(gestureDescription, null, null) // Passing null uses the main system worker thread
+    }
+
     private fun tap(node: AccessibilityNodeInfo) {
         lastAppClickTS = System.currentTimeMillis()
 
@@ -176,6 +249,8 @@ class AdSkipperService : AccessibilityService() {
                 AppLog.e(TAG, e.message!!, e)
             }
         }
+
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(commandReceiver)
     }
 
     public override fun onServiceConnected() {
@@ -247,6 +322,10 @@ class AdSkipperService : AccessibilityService() {
                         }.toTypedArray())
             )
         )
+
+        val filter = IntentFilter("${this.packageName}.ACCESSIBILITY_COMMAND")
+        LocalBroadcastManager.getInstance(this).registerReceiver(commandReceiver, filter)
+
     }
 
     companion object {

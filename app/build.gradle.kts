@@ -13,8 +13,8 @@ android {
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
         targetSdk = 37
-        versionCode = 25
-        versionName = "1.0.25"
+        versionCode = 26
+        versionName = "1.0.26"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -68,6 +68,8 @@ dependencies {
     implementation("androidx.fragment:fragment:1.9.1")
     implementation("androidx.core:core-ktx:1.19.1")
     implementation("com.revenuecat.purchases:purchases:11.0.1")
+    implementation("com.alphacephei:vosk-android:0.3.75")
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20260814")
     // Core library
@@ -83,7 +85,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:truth:1.7.0")
 
     // uiautomator
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.1")
     testImplementation(kotlin("test"))
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
 }
