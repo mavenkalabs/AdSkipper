@@ -19,14 +19,26 @@ class ProUtils private constructor() {
     companion object {
         private const val REVCAT_API_KEY = "goog_ycweEQBgTzAUEvLkxXeHaUmXILc"
 
+        private var isInitialized = false
+
+        fun isPro() : Boolean {
+            if (!isInitialized) throw IllegalStateException()
+
+            return true
+        }
+
         fun initPurchases(context: Context) {
             Purchases.logLevel = LogLevel.DEBUG
             Purchases.configure(PurchasesConfiguration.Builder(context, REVCAT_API_KEY)
                 .build())
+
+            isInitialized = true
         }
 
         @JvmStatic
         suspend fun getProducts(): List<StoreProduct> {
+            if (!isInitialized) throw IllegalStateException()
+
             val offerings = Purchases.sharedInstance.awaitOfferings()
             val packages = offerings.current?.availablePackages
 
@@ -34,6 +46,8 @@ class ProUtils private constructor() {
         }
 
         suspend fun purchaseProduct(activity: Activity, product: StoreProduct): Boolean {
+            if (!isInitialized) throw IllegalStateException()
+
             try {
                 val params = PurchaseParams.Builder(activity, storeProduct = product)
                     .build()
