@@ -6,7 +6,6 @@
     <fragment
         android:id="@+id/ServiceDisabledFragment"
         android:name="com.mavenkalabs.adskipper.ServiceDisabledFragment"
-        android:label="@string/service_disabled_fragment_label"
         tools:layout="@layout/fragment_service_disabled">
         <action
             android:id="@+id/action_ServiceDisabledFragment_to_ServiceEnabledFragment"
@@ -15,7 +14,6 @@
     <fragment
         android:id="@+id/ServiceEnabledFragment"
         android:name="com.mavenkalabs.adskipper.ServiceEnabledFragment"
-        android:label="@string/service_enabled_fragment_label"
         tools:layout="@layout/fragment_service_enabled">
         <action
             android:id="@+id/action_ServiceEnabledFragment_to_ServiceDisabledFragment"
@@ -24,7 +22,6 @@
     <fragment
         android:id="@+id/TutorialFragment"
         android:name="com.mavenkalabs.adskipper.TutorialFragment"
-        android:label="@string/service_enabled_fragment_label"
         tools:layout="@layout/fragment_tutorial">
         <action
             android:id="@+id/action_ServiceEnabledFragment_to_ServiceDisabledFragment"

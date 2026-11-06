@@ -4,10 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.accessibilityservice.GestureDescription.StrokeDescription
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.graphics.Path
@@ -19,13 +16,25 @@ import android.view.WindowManager
 import android.view.WindowMetrics
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import android.widget.Toast
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
+import com.mavenkalabs.adskipper.R
 import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
 import com.mavenkalabs.adskipper.util.ConfigReader
+import com.mavenkalabs.adskipper.util.VoiceCommand
+import com.mavenkalabs.adskipper.util.VoiceCommandManager
+import com.mavenkalabs.adskipper.util.VoiceModelManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
@@ -53,14 +62,10 @@ class AdSkipperService : AccessibilityService() {
 
     private val packageMuteRules = AtomicReference<MutableMap<String, BaseRule>?>()
 
-    private val commandReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == "${context?.packageName}.ACCESSIBILITY_COMMAND") {
-                val command = intent.getStringExtra("EXTRA_COMMAND")
-                onCommand(command)
-            }
-        }
-    }
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
+    private var syncJob: Job? = null
+
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {
             if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
@@ -134,14 +139,6 @@ class AdSkipperService : AccessibilityService() {
         }
     }
 
-    private fun onCommand(command: String?) {
-        when (command) {
-            "ACTION_TRIGGER_SWIPE_UP" -> {  performSwipe(true) }
-            "ACTION_TRIGGER_SWIPE_DOWN" -> {  performSwipe(false) }
-        }
-    }
-
-    // Assumes this function lives inside your class extending AccessibilityService
     private fun performSwipe(up: Boolean = false) {
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
@@ -250,20 +247,43 @@ class AdSkipperService : AccessibilityService() {
             }
         }
 
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(commandReceiver)
+        serviceJob.cancelChildren()
     }
 
     public override fun onServiceConnected() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        muteAds = prefs.getBoolean(MUTE_ADS_PREF, true)
-        if (prefs.getBoolean(CAPTURE_LOGS_PREF, false)) AppLog.enable() else AppLog.disable()
+        muteAds = prefs.getBoolean(getString(R.string.pref_key_mute_ads), true)
+        if (prefs.getBoolean(getString(R.string.pref_key_enable_logging), false)) AppLog.enable() else AppLog.disable()
 
         val listener: OnSharedPreferenceChangeListener?
         prefs.registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener { p: SharedPreferences?, key: String? ->
             AppLog.d(TAG, "onServiceConnected: pref changed {0}", key)
-            if (key == MUTE_ADS_PREF) {
-                muteAds = p!!.getBoolean(key, false)
-                AppLog.d(TAG, "onServiceConnected: muteAds now {0}", muteAds)
+            when (key) {
+                getString(R.string.pref_key_mute_ads) -> {
+                    muteAds = p!!.getBoolean(key, false)
+                    AppLog.d(TAG, "onServiceConnected: muteAds now {0}", muteAds)
+                }
+                getString(R.string.pref_key_pro_enable_voice) -> {
+                    val voiceEnabled = p!!.getBoolean(key, false)
+                    if (voiceEnabled) {
+                        syncJob = serviceScope.launch {
+                            val success = prepareVoiceInteractionEngine()
+                            if (!success) {
+                                Toast.makeText(this@AdSkipperService, R.string.error_init_voice, Toast.LENGTH_SHORT).show()
+                                val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                                prefs.edit(commit = true) {
+                                    putBoolean(
+                                        getString(R.string.pref_key_pro_enable_voice),
+                                        false
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        syncJob?.cancel()
+                        stopVoiceInteractionEngine()
+                    }
+                }
             }
         }.also { listener = it })
         listenerRef.set(listener)
@@ -322,18 +342,34 @@ class AdSkipperService : AccessibilityService() {
                         }.toTypedArray())
             )
         )
-
-        val filter = IntentFilter("${this.packageName}.ACCESSIBILITY_COMMAND")
-        LocalBroadcastManager.getInstance(this).registerReceiver(commandReceiver, filter)
-
     }
 
+
+    private fun stopVoiceInteractionEngine() {
+        VoiceCommandManager.stopEngine()
+    }
+
+    private suspend fun prepareVoiceInteractionEngine() : Boolean =
+        withContext(Dispatchers.IO) {
+            var success = false
+            val voiceModel = VoiceModelManager.getOrFetchModel(this@AdSkipperService)
+            if (voiceModel != null) {
+                try {
+                    VoiceCommandManager.startEngine(voiceModel) { when(it) {
+                        VoiceCommand.SWIPE_UP -> performSwipe(true)
+                        VoiceCommand.SWIPE_DOWN -> performSwipe(false)
+                    } }
+                    success = true
+                } catch (_ : SecurityException) {
+                    // do nothing
+                }
+            }
+
+            return@withContext success
+        }
+
+
     companion object {
-        const val MUTE_ADS_PREF: String = "mute_ads"
-
-        const val CAPTURE_LOGS_PREF: String = "enable_logging"
-        const val DUMP_LOGS_PREF: String = "dump_logs"
-
         const val APP_CLICK_QUIET_INTERVAL: Int = 1000
 
         private val TAG: String = AdSkipperService::class.java.getName()

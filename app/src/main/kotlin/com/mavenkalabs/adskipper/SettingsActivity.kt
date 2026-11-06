@@ -1,27 +1,20 @@
 package com.mavenkalabs.adskipper
 
-import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.Context
-import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.MenuItem
-import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.core.content.ContextCompat
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
-import com.mavenkalabs.adskipper.service.AdSkipperService
 import com.mavenkalabs.adskipper.util.AppLog
 import com.mavenkalabs.adskipper.util.ProUtils
-import com.mavenkalabs.adskipper.util.VoiceCommandManager
-import com.mavenkalabs.adskipper.util.VoiceModelManager
-import kotlinx.coroutines.launch
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,23 +33,75 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     class SettingsFragment : PreferenceFragmentCompat() {
+        private val requestAudioPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            val voiceCommandSwitch = findPreference<SwitchPreferenceCompat>(getString(R.string.pref_key_pro_enable_voice))
+            if (isGranted) {
+                voiceCommandSwitch?.isChecked = true
+            } else {
+                voiceCommandSwitch?.isChecked = false
+                Toast.makeText(requireContext(), R.string.error_voice_permission, Toast.LENGTH_SHORT).show()
+            }
+        }
+
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
 
             // not available for old devices since the log capture needs permission request etc
+            handleLogCapturePrefs()
+
+            handleProPrefs()
+        }
+
+        private fun handleProPrefs() {
+            val proSettings = findPreference<PreferenceCategory>(getString(R.string.pref_key_pro_settings))
+            if (proSettings != null) {
+                if (ProUtils.isPro()) {
+                    proSettings.isVisible = true
+
+                    val voiceCommandSwitch = findPreference<SwitchPreferenceCompat>(getString(R.string.pref_key_pro_enable_voice))
+
+                    voiceCommandSwitch?.onPreferenceChangeListener =
+                        Preference.OnPreferenceChangeListener { _, newValue ->
+                            val isChecked = newValue as Boolean
+
+                            if (!isChecked) {
+                                return@OnPreferenceChangeListener true
+                            }
+
+                            val isGranted = ContextCompat.checkSelfPermission(
+                                requireContext(),
+                                Manifest.permission.RECORD_AUDIO
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                            if (isGranted) {
+                                return@OnPreferenceChangeListener true
+                            } else {
+                                requestAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                return@OnPreferenceChangeListener false
+                            }
+                        }
+                } else {
+                    preferenceScreen.removePreferenceRecursively(getString(R.string.pref_key_pro_settings))
+                }
+            }
+        }
+
+        private fun handleLogCapturePrefs() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                var preference = findPreference<Preference?>(AdSkipperService.CAPTURE_LOGS_PREF)
+                var preference = findPreference<Preference?>(getString(R.string.pref_key_enable_logging))
                 if (preference != null) {
                     preferenceScreen.removePreference(preference)
                 }
-                preference = findPreference(AdSkipperService.DUMP_LOGS_PREF)
+                preference = findPreference(getString(R.string.pref_key_dump_logs))
                 if (preference != null) {
                     preferenceScreen.removePreference(preference)
                 }
             } else {
                 val captureLogsPref =
-                    findPreference<SwitchPreferenceCompat>(AdSkipperService.CAPTURE_LOGS_PREF)
-                val saveLogsPref = findPreference<Preference>(AdSkipperService.DUMP_LOGS_PREF)
+                    findPreference<SwitchPreferenceCompat>(getString(R.string.pref_key_enable_logging))
+                val saveLogsPref = findPreference<Preference>(getString(R.string.pref_key_dump_logs))
 
                 saveLogsPref?.isVisible = (captureLogsPref?.isChecked == true)
 
@@ -73,82 +118,11 @@ class SettingsActivity : AppCompatActivity() {
                 saveLogsPref?.onPreferenceClickListener =
                     Preference.OnPreferenceClickListener { _ ->
                         AppLog.dump(context)
-                        Toast.makeText(context, R.string.dump_logs_success_msg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, R.string.msg_dump_logs_success, Toast.LENGTH_SHORT)
+                            .show()
                         true
                     }
             }
-
-            if (ProUtils.isPro() && isAccessibilityServiceEnabled()) {
-                findPreference<PreferenceCategory>("pro_settings")?.isVisible = true
-            }
-
-            val voiceCommandsPref = findPreference<SwitchPreferenceCompat>("pref_pro_voice")
-            voiceCommandsPref?.onPreferenceChangeListener =
-                Preference.OnPreferenceChangeListener { _, newValue ->
-                    val isChecked = newValue as Boolean
-
-                    if (isChecked) prepareVoiceInteractionEngine(voiceCommandsPref) else stopVoiceInteractionEngine()
-
-                    true
-                }
-        }
-
-        private fun stopVoiceInteractionEngine() {
-            VoiceCommandManager.stopEngine()
-        }
-
-        private fun isAccessibilityServiceEnabled(): Boolean {
-            val am = requireContext().getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager
-
-            // Get the list of all currently enabled accessibility services
-            val enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-
-            for (enabledService in enabledServices) {
-                val serviceInfo = enabledService.resolveInfo.serviceInfo
-                // Check if the package name and class name match your service
-                if (serviceInfo.packageName == requireContext().packageName && serviceInfo.name == AdSkipperService::class.java.name) {
-                    return true
-                }
-            }
-            return false
-        }
-
-        private fun prepareVoiceInteractionEngine(voiceCommandsPref: Preference) {
-            lifecycleScope.launch {
-                var success = false
-                val voskModel = VoiceModelManager.getOrFetchModel(requireContext())
-                if (voskModel != null) {
-                    try {
-                        VoiceCommandManager.startEngine(voskModel) { handleIncomingCommand(it) }
-                        success = true
-                    } catch (_ : SecurityException) {
-                        // do nothing
-                        success = false
-                    }
-                } else {
-                    Log.e("VoiceEngine", "Unable to load offline speech processing system.")
-                }
-
-                if (!success) {
-                    voiceCommandsPref.isEnabled = false
-                    Toast.makeText(requireContext(), R.string.error_init_voice, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-        private fun handleIncomingCommand(command: String) {
-            Log.d("VoiceEngine", "Executing: $command")
-            val action : String = if (command == "go next") {
-                "ACTION_TRIGGER_SWIPE_UP"
-            } else {
-                "ACTION_TRIGGER_SWIPE_DOWN"
-            }
-
-            val intent = Intent("${context?.packageName}.ACCESSIBILITY_COMMAND").apply {
-                putExtra("EXTRA_COMMAND", action)
-            }
-            // This broadcasts exclusively inside your own app process
-            LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(intent)
         }
     }
 }

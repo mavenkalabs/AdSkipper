@@ -57,8 +57,8 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
         }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        if (!prefs.contains(AdSkipperService.MUTE_ADS_PREF)) {
-            prefs.edit { putBoolean(AdSkipperService.MUTE_ADS_PREF, true) }
+        if (!prefs.contains(getString(R.string.pref_key_mute_ads))) {
+            prefs.edit { putBoolean(getString(R.string.pref_key_mute_ads), true) }
         }
 
         checkPremiumStatus()

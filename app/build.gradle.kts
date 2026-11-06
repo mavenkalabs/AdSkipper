@@ -69,7 +69,6 @@ dependencies {
     implementation("androidx.core:core-ktx:1.19.1")
     implementation("com.revenuecat.purchases:purchases:11.0.1")
     implementation("com.alphacephei:vosk-android:0.3.75")
-    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20260814")
     // Core library

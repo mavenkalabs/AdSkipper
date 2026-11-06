@@ -9,6 +9,7 @@ import android.media.AudioManager
 import android.os.Handler
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.mavenkalabs.adskipper.R
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -35,6 +36,9 @@ internal class AdSkipperServiceTest {
 
         private
         const val YT_MUSIC_PKG_NAME: String = "com.google.android.apps.youtube.music"
+
+        private
+        const val MUTE_ADS_PREF = "mute_ads"
     }
 
     @Mock
@@ -78,6 +82,7 @@ internal class AdSkipperServiceTest {
                 ArgumentMatchers.anyBoolean()
             )
         ).thenReturn(true)
+        doReturn(MUTE_ADS_PREF).whenever(service).getString(ArgumentMatchers.eq(R.string.pref_key_mute_ads))
 
         doReturn(nodeInfoMock).whenever(service).rootInActiveWindow
         whenever(eventMock.packageName).thenReturn(YT_PKG_NAME)
@@ -360,9 +365,9 @@ internal class AdSkipperServiceTest {
             )
 
         doReturn(false).whenever(sharedPreferencesMock)
-            .getBoolean(AdSkipperService.MUTE_ADS_PREF, false)
+            .getBoolean(MUTE_ADS_PREF, false)
         listenerArgumentCaptor!!.getValue()!!
-            .onSharedPreferenceChanged(sharedPreferencesMock, AdSkipperService.MUTE_ADS_PREF)
+            .onSharedPreferenceChanged(sharedPreferencesMock, MUTE_ADS_PREF)
 
         whenever(
             nodeInfoMock.findAccessibilityNodeInfosByViewId(
