@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <PreferenceCategory android:title="@string/pref_category_general"
+    <PreferenceCategory android:title="@string/title_category_general"
         app:iconSpaceReserved="false">
         <SwitchPreferenceCompat
-            app:key="mute_ads"
+            app:key="@string/pref_key_mute_ads"
             app:iconSpaceReserved="false"
-            app:title="@string/mute_ads"
-            app:summary="@string/mute_ads_desc"
+            app:title="@string/label_mute_ads"
+            app:summary="@string/label_mute_ads_desc"
             app:defaultValue="true" />
         <SwitchPreferenceCompat
             android:defaultValue="false"
             app:iconSpaceReserved="false"
-            android:key="enable_logging"
-            android:title="@string/enable_logging"
-            android:summary="@string/enable_logging_desc"/>
+            android:key="@string/pref_key_enable_logging"
+            android:title="@string/label_enable_logging"
+            android:summary="@string/label_enable_logging_desc"/>
         <Preference
             app:isPreferenceVisible="false"
             app:iconSpaceReserved="false"
-            android:key="dump_logs"
-            android:title="@string/dump_logs"
-            android:summary="@string/dump_logs_desc" />
+            android:key="@string/pref_key_dump_logs"
+            android:title="@string/label_dump_logs"
+            android:summary="@string/label_dump_logs_desc" />
     </PreferenceCategory>
-    <PreferenceCategory android:title="@string/pref_category_pro"
-        app:key="pro_settings"
+    <PreferenceCategory android:title="@string/title_category_pro"
+        android:key="@string/pref_key_pro_settings"
         app:isPreferenceVisible="false"
         app:iconSpaceReserved="false">
         <SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="pref_pro_voice"
+            android:key="@string/pref_key_pro_enable_voice"
             app:iconSpaceReserved="false"
-            android:title="@string/pref_pro_voice"
-            android:summary="@string/pref_pro_voice_desc"/>
+            android:title="@string/label_voice"
+            android:summary="@string/label_voice_desc"/>
 
     </PreferenceCategory>
 </PreferenceScreen>

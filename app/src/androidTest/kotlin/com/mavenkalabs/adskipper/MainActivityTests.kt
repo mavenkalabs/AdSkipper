@@ -12,7 +12,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
-import com.mavenkalabs.adskipper.service.AdSkipperService
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertNull
@@ -29,6 +28,7 @@ internal class MainActivityTests {
     companion object {
         private const val TIMEOUT : Long = 2000
         private const val APP_NAME: String = "Ad Skipper"
+        private const val MUTE_ADS_PREF = "mute_ads"
     }
 
     @Before
@@ -60,14 +60,14 @@ internal class MainActivityTests {
         found = uiDevice.hasObject(
             By.text(
                 ApplicationProvider.getApplicationContext<Context>()
-                    .getString(R.string.a11y_service_disabled_message)
+                    .getString(R.string.label_a11y_service_disabled)
             )
         )
         assertTrue(found)
 
         found = uiDevice.findObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.disagree)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_disagree)
                     .uppercase(Locale.getDefault())
             )
         ).clickAndWait(Until.newWindow(), TIMEOUT)
@@ -106,14 +106,14 @@ internal class MainActivityTests {
         found = uiDevice.hasObject(
             By.text(
                 ApplicationProvider.getApplicationContext<Context>()
-                    .getString(R.string.a11y_service_disabled_message)
+                    .getString(R.string.label_a11y_service_disabled)
             )
         )
         assertTrue(found)
 
         found = uiDevice.findObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.agree)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_agree)
                     .uppercase(Locale.getDefault())
             )
         ).clickAndWait(Until.newWindow(), TIMEOUT)
@@ -127,7 +127,7 @@ internal class MainActivityTests {
             Until.hasObject(
                 By.text(
                     ApplicationProvider.getApplicationContext<Context>()
-                        .getString(R.string.a11y_service_enabled_message1)
+                        .getString(R.string.label_a11y_service_enabled1)
                 )
             ), 10000
         )
@@ -136,14 +136,14 @@ internal class MainActivityTests {
         val prefs =
             PreferenceManager.getDefaultSharedPreferences(
                 ApplicationProvider.getApplicationContext())
-        assertTrue(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false))
+        assertTrue(prefs.getBoolean(MUTE_ADS_PREF, false))
 
         launchA11ySettings()
         toggleMuteAdsSetting(false)
-        assertFalse(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, true))
+        assertFalse(prefs.getBoolean(MUTE_ADS_PREF, true))
 
         toggleMuteAdsSetting(true)
-        assertTrue(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false))
+        assertTrue(prefs.getBoolean(MUTE_ADS_PREF, false))
     }
 
     @Test
@@ -166,14 +166,14 @@ internal class MainActivityTests {
 
         found = uiDevice.hasObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.tutorial)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_tutorial)
             )
         )
         assertTrue(found)
 
         found = uiDevice.findObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.tutorial)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_tutorial)
             )
         ).clickAndWait(Until.newWindow(), TIMEOUT)
         assertTrue(found)
@@ -210,7 +210,7 @@ internal class MainActivityTests {
         found = uiDevice.hasObject(
             By.text(
                 ApplicationProvider.getApplicationContext<Context>()
-                    .getString(R.string.a11y_service_enabled_message1)
+                    .getString(R.string.label_a11y_service_enabled1)
             )
         )
         assertTrue(found)
@@ -231,7 +231,7 @@ internal class MainActivityTests {
             Until.hasObject(
                 By.text(
                     ApplicationProvider.getApplicationContext<Context>()
-                        .getString(R.string.a11y_service_disabled_message)
+                        .getString(R.string.label_a11y_service_disabled)
                 )
             ), 10000
         )
@@ -241,7 +241,7 @@ internal class MainActivityTests {
     private fun launchA11ySettings() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        InstrumentationRegistry.getInstrumentation().context.startActivity(intent)
+        InstrumentationRegistry.getInstrumentation().targetContext.startActivity(intent)
 
         uiDevice.waitForWindowUpdate(null, TIMEOUT)
     }
@@ -270,7 +270,7 @@ internal class MainActivityTests {
             Until.hasObject(
                 By.text(
                     ApplicationProvider.getApplicationContext<Context>()
-                        .getString(R.string.mute_ads)
+                        .getString(R.string.label_mute_ads)
                 )
             ), TIMEOUT
         )

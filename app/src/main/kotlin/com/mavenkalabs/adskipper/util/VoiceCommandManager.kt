@@ -12,11 +12,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.vosk.Model
 import org.vosk.Recognizer
+import java.util.Locale.getDefault
 
 enum class DetectionState {
     WAKE_WORD,
     COMMAND,
     DISABLED
+}
+
+enum class VoiceCommand (val phrases: List<String>) {
+    SWIPE_UP (listOf("swipe up", "swip up")),
+    SWIPE_DOWN(listOf("swipe down", "swip down"))
 }
 
 object VoiceCommandManager {
@@ -37,12 +43,10 @@ object VoiceCommandManager {
         assistantNames.flatMap { listOf("ok $it", "okay $it", "oh $it", "o $it") }
     private val stopPhrases =
         assistantNames.map{ "stop $it" }
-    private val commandPhrases = stopPhrases.toMutableList().apply {
-        addAll(listOf("go next", "go back"))
-    }.toList()
+    private val commandPhrases = VoiceCommand.entries.flatMap { it.phrases }
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    fun startEngine(model: Model, onCommandDetected: (String) -> Unit) {
+    fun startEngine(model: Model, onCommandDetected: (VoiceCommand) -> Unit) {
         if (currentState != DetectionState.DISABLED) return
 
         // 1. Configure VOICE_COMMUNICATION to request system-level AEC pipelines
@@ -79,7 +83,7 @@ object VoiceCommandManager {
         }
     }
 
-    private fun processAudioStream(model: Model, onCommandDetected: (String) -> Unit) {
+    private fun processAudioStream(model: Model, onCommandDetected: (VoiceCommand) -> Unit) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
         val buffer = ShortArray(BUFFER_SIZE)
 
@@ -130,7 +134,7 @@ object VoiceCommandManager {
         commandRecognizer.close()
     }
 
-    private fun handleSpeechResult(jsonString: String, isFinal: Boolean, onCommandDetected: (String) -> Unit) {
+    private fun handleSpeechResult(jsonString: String, isFinal: Boolean, onCommandDetected: (VoiceCommand) -> Unit) {
         try {
             val json = JSONObject(jsonString)
 
@@ -148,7 +152,6 @@ object VoiceCommandManager {
                 }
 
                 DetectionState.COMMAND -> {
-                    // Extract payload depending on whether Vosk emitted a partial snippet or final segment
                     val text = if (isFinal) {
                         json.optString("text", "").lowercase()
                     } else {
@@ -161,7 +164,9 @@ object VoiceCommandManager {
                         Log.d(TAG, "Command canceled by user. Falling back to WAKE_WORD loop.")
                         currentState = DetectionState.WAKE_WORD
                     } else {
-                        val detectedCommand = commandPhrases.firstOrNull { text.contains(it, ignoreCase = true) }
+                        val detectedCommand = VoiceCommand.entries.firstOrNull { it.phrases.contains(
+                            text.lowercase(getDefault())
+                        ) }
                         if (detectedCommand != null) {
                             // Deliver isolated matched command string
                             currentState = DetectionState.WAKE_WORD // Auto-reset fallback

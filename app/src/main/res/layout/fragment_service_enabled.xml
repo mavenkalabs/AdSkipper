@@ -25,14 +25,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/a11y_service_enabled_message1"
+            android:text="@string/label_a11y_service_enabled1"
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.Material3.BodyLarge"/>
         <TextView
             android:id="@+id/textview_second"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/a11y_service_enabled_message2"
+            android:text="@string/label_a11y_service_enabled2"
             android:textAlignment="center"
             android:textAppearance="@style/TextAppearance.Material3.BodySmall"/>
 
