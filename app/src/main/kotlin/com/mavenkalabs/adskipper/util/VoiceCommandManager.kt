@@ -8,11 +8,17 @@ import android.media.audiofx.AcousticEchoCanceler
 import android.os.Process
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.vosk.Model
 import org.vosk.Recognizer
-import java.util.Locale.getDefault
 
 enum class DetectionState {
     WAKE_WORD,
@@ -37,6 +43,10 @@ object VoiceCommandManager {
 
     @Volatile private var currentState = DetectionState.DISABLED
     private var loopThread: Thread? = null
+
+    private val engineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private var timeoutJob: Job? = null
+    private const val TIMEOUT_DURATION_MS = 5000L
 
     private val assistantNames = listOf("miri", "mary")
     private val wakePhrases =
@@ -101,18 +111,20 @@ object VoiceCommandManager {
             if (currentState != previousState) {
                 currentRecognizer = when (currentState) {
                     DetectionState.WAKE_WORD -> {
+                        cancelTimeoutTimer()
                         wakeRecognizer.reset()
-
                         wakeRecognizer
                     }
                     DetectionState.COMMAND -> {
                         commandRecognizer.reset()
 
-                        val garbageBuffer = ShortArray(BUFFER_SIZE)
-                        repeat(3) {
-                            audioRecord?.read(garbageBuffer, 0, garbageBuffer.size)
-                        }
+                        val drainBuffer = ShortArray(BUFFER_SIZE)
+                        var bytesDrained: Int
+                        do {
+                            bytesDrained = audioRecord?.read(drainBuffer, 0, drainBuffer.size, AudioRecord.READ_NON_BLOCKING) ?: 0
+                        } while (bytesDrained > 0)
 
+                        resetTimeoutTimer()
                         commandRecognizer
                     }
                     else -> currentRecognizer
@@ -126,18 +138,28 @@ object VoiceCommandManager {
 
                 // Parse instant partial responses for faster interaction handling
                 val resultJson = if (isFinal) currentRecognizer.result else currentRecognizer.partialResult
-                handleSpeechResult(resultJson, isFinal, onCommandDetected)
+                val success = handleSpeechResult(resultJson, isFinal, onCommandDetected)
+                if (success) {
+                    currentRecognizer.reset()
+
+                    val drainBuffer = ShortArray(BUFFER_SIZE)
+                    var bytesDrained: Int
+                    do {
+                        bytesDrained = audioRecord?.read(drainBuffer, 0, drainBuffer.size, AudioRecord.READ_NON_BLOCKING) ?: 0
+                    } while (bytesDrained > 0)
+                }
             }
         }
 
+        cancelTimeoutTimer()
         wakeRecognizer.close()
         commandRecognizer.close()
     }
 
-    private fun handleSpeechResult(jsonString: String, isFinal: Boolean, onCommandDetected: (VoiceCommand) -> Unit) {
+    private fun handleSpeechResult(jsonString: String, isFinal: Boolean, onCommandDetected: (VoiceCommand) -> Unit) : Boolean {
         try {
             val json = JSONObject(jsonString)
-
+            var handled = false
             when (currentState) {
                 DetectionState.WAKE_WORD -> {
                     val text =
@@ -148,6 +170,7 @@ object VoiceCommandManager {
 
                         // Audio Ducking point: Trigger media volume lower here before command capture
                         currentState = DetectionState.COMMAND
+                        handled = true
                     }
                 }
 
@@ -158,31 +181,56 @@ object VoiceCommandManager {
                         json.optString("partial", "").lowercase()
                     }
 
-                    if (text.isEmpty() || text == "[unk]") return
+                    if (text.isEmpty() || text == "[unk]") return false
 
                     if (stopPhrases.any { text.contains(it, ignoreCase = true) }) {
                         Log.d(TAG, "Command canceled by user. Falling back to WAKE_WORD loop.")
                         currentState = DetectionState.WAKE_WORD
                     } else {
                         val detectedCommand = VoiceCommand.entries.firstOrNull { it.phrases.contains(
-                            text.lowercase(getDefault())
+                            text.lowercase()
                         ) }
                         if (detectedCommand != null) {
                             // Deliver isolated matched command string
-                            currentState = DetectionState.WAKE_WORD // Auto-reset fallback
                             onCommandDetected(detectedCommand)
+
+                            resetTimeoutTimer()
+                            handled = true
                         }
                     }
                 }
                 else -> {}
             }
+
+            return handled
         } catch (e: Exception) {
             Log.e(TAG, "Error handling state machine logic mapping", e)
+            return false
         }
+    }
+
+    private fun resetTimeoutTimer() {
+        timeoutJob?.cancel() // Invalidate the previous countdown instantly
+        timeoutJob = engineScope.launch {
+            delay(TIMEOUT_DURATION_MS)
+
+            // If the delay completes without cancellation, target state shifts back
+            if (currentState == DetectionState.COMMAND) {
+                Log.d(TAG, "5-second command window expired. Reverting to WAKE_WORD mode.")
+                currentState = DetectionState.WAKE_WORD
+            }
+        }
+    }
+
+    private fun cancelTimeoutTimer() {
+        timeoutJob?.cancel()
+        timeoutJob = null
     }
 
     fun stopEngine() {
         currentState = DetectionState.DISABLED
+        cancelTimeoutTimer()
+        engineScope.cancel() // Tear down coroutine structural bindings safely
         try {
             audioRecord?.stop()
             audioRecord?.release()
