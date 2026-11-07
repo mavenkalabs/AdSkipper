@@ -196,6 +196,7 @@ object VoiceCommandManager {
 
                             resetTimeoutTimer()
                             handled = true
+                            //framesToSkip = 1
                         }
                     }
                 }
