@@ -112,9 +112,12 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
         val usageThreshold = 30.days.inWholeMilliseconds
 
         return try {
-            val context = requireContext()
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            packageInfo.firstInstallTime < (System.currentTimeMillis() - usageThreshold)
+            context?.let {
+                val packageInfo = it.packageManager.getPackageInfo(it.packageName, 0)
+                packageInfo.firstInstallTime < (System.currentTimeMillis() - usageThreshold)
+            }
+
+            false
         } catch (_: PackageManager.NameNotFoundException) {
             false
         }
