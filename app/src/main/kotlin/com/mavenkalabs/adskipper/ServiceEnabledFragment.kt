@@ -1,6 +1,7 @@
 package com.mavenkalabs.adskipper
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.provider.Settings.SettingNotFoundException
@@ -19,6 +20,7 @@ import com.mavenkalabs.adskipper.util.ProUtils
 import com.revenuecat.purchases.models.StoreProduct
 import kotlinx.coroutines.launch
 import java.util.Arrays
+import kotlin.time.Duration.Companion.days
 
 class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
     companion object {
@@ -47,7 +49,7 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
 
         childFragmentManager.setFragmentResultListener("refreshPremiumStatus", this) { _, _ ->
             showPremiumEnabledFragment = true
-            checkPremiumStatus()
+            checkAndShowPremium()
         }
 
         val buttonGotoA11ySettings = view.findViewById<Button>(R.id.button_goto_a11y_settings)
@@ -61,46 +63,62 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
             prefs.edit { putBoolean(AdSkipperService.MUTE_ADS_PREF, true) }
         }
 
-        checkPremiumStatus()
+        checkAndShowPremium()
     }
 
-    private fun checkPremiumStatus() {
+    private fun checkAndShowPremium() {
         loadingSpinner.visibility = View.VISIBLE
         childFragment.visibility = View.GONE
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            var products : List<StoreProduct> = emptyList()
-            try {
-                products = ProUtils.getProducts()
-                if (products.isNotEmpty()) {
-                    if (showPremiumEnabledFragment) {
-                        childFragmentManager.beginTransaction()
-                            .setReorderingAllowed(true)
-                            .replace(R.id.premium_fragment_container, PremiumEnabledFragment())
-                            .commit()
-                    } else {
-                        childFragmentManager.beginTransaction()
-                            .setReorderingAllowed(true)
-                            .replace(R.id.premium_fragment_container, PremiumDisabledFragment())
-                            .commit()
+        if (hasAppUsage()) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                var products: List<StoreProduct> = emptyList()
+                try {
+                    products = ProUtils.getProducts()
+                    if (products.isNotEmpty()) {
+                        if (showPremiumEnabledFragment) {
+                            childFragmentManager.beginTransaction()
+                                .setReorderingAllowed(true)
+                                .replace(R.id.premium_fragment_container, PremiumEnabledFragment())
+                                .commit()
+                        } else {
+                            childFragmentManager.beginTransaction()
+                                .setReorderingAllowed(true)
+                                .replace(R.id.premium_fragment_container, PremiumDisabledFragment())
+                                .commit()
+                        }
+                    }
+                } catch (e: Exception) {
+                    AppLog.e(TAG, e.message ?: e.toString(), e)
+
+                    val existingChild =
+                        childFragmentManager.findFragmentById(R.id.premium_fragment_container)
+                    if (existingChild != null) {
+                        childFragmentManager.beginTransaction().remove(existingChild).commit()
+                    }
+                } finally {
+                    loadingSpinner.visibility = View.GONE
+                    if (products.isNotEmpty()) {
+                        childFragment.visibility = View.VISIBLE
                     }
                 }
-            } catch (e: Exception) {
-                AppLog.e(TAG, e.message ?: e.toString(), e)
-
-                val existingChild = childFragmentManager.findFragmentById(R.id.premium_fragment_container)
-                if (existingChild != null) {
-                    childFragmentManager.beginTransaction().remove(existingChild).commit()
-                }
-            } finally {
-                loadingSpinner.visibility = View.GONE
-                if (products.isNotEmpty()) {
-                    childFragment.visibility = View.VISIBLE
-                }
             }
+        } else {
+            loadingSpinner.visibility = View.GONE
         }
     }
 
+    fun hasAppUsage(): Boolean {
+        val usageThreshold = 30.days.inWholeMilliseconds
+
+        return try {
+            val context = requireContext()
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            packageInfo.firstInstallTime < (System.currentTimeMillis() - usageThreshold)
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
 
     private val isA11yServiceEnabled: Boolean
         get() {
