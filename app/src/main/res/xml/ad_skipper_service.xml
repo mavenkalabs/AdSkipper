@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityEventTypes="typeWindowContentChanged|typeViewClicked"
+    android:accessibilityEventTypes="typeWindowContentChanged|typeViewClicked|typeWindowStateChanged"
     android:accessibilityFlags="flagReportViewIds"
-    android:packageNames="com.google.android.youtube,com.google.android.apps.youtube.music"
     android:settingsActivity="com.mavenkalabs.adskipper.SettingsActivity"
     android:canPerformGestures="true"
     android:canRetrieveWindowContent="true" />

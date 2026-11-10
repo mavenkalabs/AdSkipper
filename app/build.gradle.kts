@@ -13,8 +13,8 @@ android {
         applicationId = "com.mavenkalabs.adskipper"
         minSdk = 24
         targetSdk = 37
-        versionCode = 26
-        versionName = "1.0.26"
+        versionCode = 27
+        versionName = "1.0.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,7 +67,7 @@ dependencies {
     implementation("androidx.preference:preference:1.2.1")
     implementation("androidx.fragment:fragment:1.9.1")
     implementation("androidx.core:core-ktx:1.19.1")
-    implementation("com.revenuecat.purchases:purchases:11.0.1")
+    implementation("com.revenuecat.purchases:purchases:11.2.0")
     implementation("com.alphacephei:vosk-android:0.3.75")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20260814")
