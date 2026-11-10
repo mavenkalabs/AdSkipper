@@ -14,6 +14,7 @@ import android.graphics.Path
 import android.graphics.Rect
 import android.media.AudioManager
 import android.os.Build
+import android.util.Log
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.view.WindowMetrics
@@ -27,7 +28,6 @@ import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
-import com.mavenkalabs.adskipper.util.ConfigReader
 import com.mavenkalabs.adskipper.util.VoiceCommand
 import com.mavenkalabs.adskipper.util.VoiceCommandManager
 import com.mavenkalabs.adskipper.util.VoiceModelManager
@@ -45,8 +45,6 @@ class AdSkipperService : AccessibilityService() {
     private var muteAds = false
 
     private var adInProgress = false
-
-    private val configReader: ConfigReader? = null
 
     /**
      * Last time a click happened
@@ -77,8 +75,8 @@ class AdSkipperService : AccessibilityService() {
             }
         }
     }
-    private var currentPackageName : CharSequence? = null
-    private var isVoiceEngineStarted = false
+    @Volatile private var currentPackageName : CharSequence? = null
+    @Volatile private var isVoiceEngineStarted = false
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {
@@ -275,15 +273,6 @@ class AdSkipperService : AccessibilityService() {
         super.onDestroy()
 
         unregisterReceiver(screenStateReceiver)
-
-        if (configReader != null) {
-            try {
-                configReader.close()
-            } catch (e: Exception) {
-                AppLog.e(TAG, e.message!!, e)
-            }
-        }
-
         serviceJob.cancelChildren()
     }
 
@@ -375,15 +364,19 @@ class AdSkipperService : AccessibilityService() {
 
 
     private fun stopVoiceInteractionEngine() {
+        Log.d(TAG, "Entered stopVoiceInteractionEngine")
         if (isVoiceEngineStarted) {
+            isVoiceEngineStarted = false
             VoiceCommandManager.stopEngine()
         }
     }
 
     private suspend fun prepareVoiceInteractionEngine() {
-        val success = withContext(Dispatchers.IO) {
-            if (isVoiceEngineStarted) return@withContext true
+        Log.d(TAG, "Entered prepareVoiceInteractionEngine")
+        if (isVoiceEngineStarted)
+            return
 
+        val success = withContext(Dispatchers.IO) {
             val isVoiceCommandEnabled = PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 .getBoolean(getString(R.string.pref_key_pro_enable_voice), false)
 
@@ -401,6 +394,7 @@ class AdSkipperService : AccessibilityService() {
                         VoiceCommand.SWIPE_UP -> performSwipe(true)
                         VoiceCommand.SWIPE_DOWN -> performSwipe(false)
                     } }
+                    isVoiceEngineStarted = true
                     success = true
                 } catch (_ : SecurityException) {
                     // do nothing
