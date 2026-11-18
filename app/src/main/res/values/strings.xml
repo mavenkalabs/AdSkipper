@@ -40,4 +40,8 @@
     <string name="label_premium_subscription_prompt2">Your support helps us make it better</string>
     <string name="label_premium_buy_subscription">Buy coffee</string>
     <string name="label_premium_review">Rate app</string>
+    
+    <!-- Strings used in tile service -->
+    <string name="label_voice_cmd_tile">Voice Commands</string>
+
 </resources>

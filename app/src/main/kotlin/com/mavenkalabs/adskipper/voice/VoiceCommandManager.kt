@@ -1,4 +1,4 @@
-package com.mavenkalabs.adskipper.util
+package com.mavenkalabs.adskipper.voice
 
 import android.Manifest
 import android.media.AudioFormat
@@ -8,6 +8,7 @@ import android.media.audiofx.AcousticEchoCanceler
 import android.os.Process
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import com.mavenkalabs.adskipper.util.AppLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,7 +37,9 @@ object VoiceCommandManager {
     private const val SAMPLE_RATE = 16000
     private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
     private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-    private val BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT) * 2
+    private val BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE,
+        CHANNEL_CONFIG,
+        AUDIO_FORMAT) * 2
 
     private var audioRecord: AudioRecord? = null
     private var echoCanceler: AcousticEchoCanceler? = null
@@ -56,12 +59,11 @@ object VoiceCommandManager {
     private val commandPhrases = VoiceCommand.entries.flatMap { it.phrases }
 
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    fun startEngine(model: Model, onCommandDetected: (VoiceCommand) -> Unit) {
+    fun startEngine(model: Model, audioDucker: AudioDucker?, onCommandDetected: (VoiceCommand) -> Unit) {
         if (currentState != DetectionState.DISABLED) return
 
-        // 1. Configure VOICE_COMMUNICATION to request system-level AEC pipelines
         audioRecord = AudioRecord(
-            MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+            MediaRecorder.AudioSource.VOICE_RECOGNITION,
             SAMPLE_RATE,
             CHANNEL_CONFIG,
             AUDIO_FORMAT,
@@ -88,12 +90,12 @@ object VoiceCommandManager {
         currentState = DetectionState.WAKE_WORD
         audioRecord?.startRecording()
 
-        loopThread = Thread({ processAudioStream(model, onCommandDetected) }, "VoiceStateStreamingThread").apply {
+        loopThread = Thread({ processAudioStream(model, audioDucker, onCommandDetected) }, "VoiceStateStreamingThread").apply {
             start()
         }
     }
 
-    private fun processAudioStream(model: Model, onCommandDetected: (VoiceCommand) -> Unit) {
+    private fun processAudioStream(model: Model, audioDucker: AudioDucker?, onCommandDetected: (VoiceCommand) -> Unit) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
         val buffer = ShortArray(BUFFER_SIZE)
 
@@ -124,7 +126,7 @@ object VoiceCommandManager {
                             bytesDrained = audioRecord?.read(drainBuffer, 0, drainBuffer.size, AudioRecord.READ_NON_BLOCKING) ?: 0
                         } while (bytesDrained > 0)
 
-                        resetTimeoutTimer()
+                        resetTimeoutTimer(audioDucker)
                         commandRecognizer
                     }
                     else -> currentRecognizer
@@ -138,7 +140,7 @@ object VoiceCommandManager {
 
                 // Parse instant partial responses for faster interaction handling
                 val resultJson = if (isFinal) currentRecognizer.result else currentRecognizer.partialResult
-                val success = handleSpeechResult(resultJson, isFinal, onCommandDetected)
+                val success = handleSpeechResult(resultJson, isFinal, audioDucker, onCommandDetected)
                 if (success) {
                     currentRecognizer.reset()
 
@@ -156,7 +158,7 @@ object VoiceCommandManager {
         commandRecognizer.close()
     }
 
-    private fun handleSpeechResult(jsonString: String, isFinal: Boolean, onCommandDetected: (VoiceCommand) -> Unit) : Boolean {
+    private fun handleSpeechResult(jsonString: String, isFinal: Boolean, audioDucker: AudioDucker?, onCommandDetected: (VoiceCommand) -> Unit) : Boolean {
         try {
             val json = JSONObject(jsonString)
             var handled = false
@@ -169,6 +171,7 @@ object VoiceCommandManager {
                         Log.d(TAG, "Wake word matched ${text}! Swapping engine directly to COMMAND state.")
 
                         // Audio Ducking point: Trigger media volume lower here before command capture
+                        audioDucker?.startDucking()
                         currentState = DetectionState.COMMAND
                         handled = true
                     }
@@ -185,6 +188,7 @@ object VoiceCommandManager {
 
                     if (stopPhrases.any { text.contains(it, ignoreCase = true) }) {
                         Log.d(TAG, "Command canceled by user. Falling back to WAKE_WORD loop.")
+                        audioDucker?.stopDucking()
                         currentState = DetectionState.WAKE_WORD
                     } else {
                         val detectedCommand = VoiceCommand.entries.firstOrNull { it.phrases.contains(
@@ -194,7 +198,7 @@ object VoiceCommandManager {
                             // Deliver isolated matched command string
                             onCommandDetected(detectedCommand)
 
-                            resetTimeoutTimer()
+                            resetTimeoutTimer(audioDucker)
                             handled = true
                             //framesToSkip = 1
                         }
@@ -210,13 +214,15 @@ object VoiceCommandManager {
         }
     }
 
-    private fun resetTimeoutTimer() {
+    private fun resetTimeoutTimer(audioDucker: AudioDucker?) {
         timeoutJob?.cancel() // Invalidate the previous countdown instantly
         timeoutJob = engineScope.launch {
             delay(TIMEOUT_DURATION_MS)
 
             // If the delay completes without cancellation, target state shifts back
             if (currentState == DetectionState.COMMAND) {
+                audioDucker?.stopDucking()
+
                 Log.d(TAG, "5-second command window expired. Reverting to WAKE_WORD mode.")
                 currentState = DetectionState.WAKE_WORD
             }

@@ -20,21 +20,21 @@ import android.view.WindowManager
 import android.view.WindowMetrics
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import android.widget.Toast
-import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.mavenkalabs.adskipper.R
 import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
-import com.mavenkalabs.adskipper.util.VoiceCommand
-import com.mavenkalabs.adskipper.util.VoiceCommandManager
-import com.mavenkalabs.adskipper.util.VoiceModelManager
+import com.mavenkalabs.adskipper.voice.AudioDucker
+import com.mavenkalabs.adskipper.voice.VoiceCommand
+import com.mavenkalabs.adskipper.voice.VoiceCommandManager
+import com.mavenkalabs.adskipper.voice.VoiceModelManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicReference
@@ -62,46 +62,37 @@ class AdSkipperService : AccessibilityService() {
 
     private val packageMuteRules = AtomicReference<MutableMap<String, BaseRule>?>()
 
-    private val serviceJob = SupervisorJob()
-    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
+    private var voiceEngineStarterJob : Job? = null
 
     private val screenStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 Intent.ACTION_SCREEN_OFF -> stopVoiceInteractionEngine()
-                Intent.ACTION_SCREEN_ON -> serviceScope.launch {
-                    prepareVoiceInteractionEngine()
+                Intent.ACTION_SCREEN_ON -> {
+                    if (voiceEngineStarterJob?.isActive == true) return
+
+                    voiceEngineStarterJob = CoroutineScope(Dispatchers.IO).launch {
+                        startVoiceInteractionEngine()
+                    }
                 }
             }
         }
     }
-    @Volatile private var currentPackageName : CharSequence? = null
     @Volatile private var isVoiceEngineStarted = false
+
+    private var currentPackageName: String? = null
+
+    private val ignoredSystemPackages = setOf(
+        "com.android.systemui",
+        "com.google.android.permissioncontroller",
+        "com.android.packageinstaller"
+    )
+
+    private var audioDucker : AudioDucker? = null
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {
-            val eventPkgName =
-                (if (event.packageName != null) event.packageName.toString() else null)
-            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                if (eventPkgName != null && eventPkgName != currentPackageName) {
-                    currentPackageName = eventPkgName
-                    if (packageClickRules.get()?.contains(eventPkgName)?:false) {
-                        serviceScope.launch {
-                            prepareVoiceInteractionEngine()
-                        }
-                    } else {
-                        // stop engine
-                        stopVoiceInteractionEngine()
-                    }
-                }
-            }
-
-            if (!(packageClickRules.get()?.contains(eventPkgName)
-                    ?: false) && !(packageMuteRules.get()?.contains(eventPkgName)
-                    ?: false)
-            ) {
-                return
-            }
+            checkWindowInFocus(event)
 
             if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
                 val now = System.currentTimeMillis()
@@ -117,6 +108,7 @@ class AdSkipperService : AccessibilityService() {
             )
 
             val rootNode = rootInActiveWindow
+            val eventPkgName = event.packageName?.toString() ?: return
             val currentMuteRules = packageMuteRules.get()!![eventPkgName]
             if (rootNode != null && currentMuteRules != null) {
                 val conditionSatisfied = currentMuteRules.apply(rootNode, parameters).isPassed
@@ -169,6 +161,62 @@ class AdSkipperService : AccessibilityService() {
             }
         } catch (e: Exception) {
             AppLog.e(TAG, "Unexpected error", e)
+        }
+    }
+
+    private fun checkWindowInFocus(event: AccessibilityEvent?) {
+        event ?: return
+
+        if (shouldCheckActiveWindow(event)) {
+            val activePackage = resolveActiveAppPackage() ?: return
+
+            if (activePackage !in ignoredSystemPackages && activePackage != currentPackageName) {
+                currentPackageName = activePackage
+
+                if (!(packageClickRules.get()?.contains(currentPackageName)
+                        ?: false) && !(packageMuteRules.get()?.contains(currentPackageName)
+                        ?: false)
+                ) {
+                    stopVoiceInteractionEngine()
+                } else {
+                    startVoiceInteractionEngine()
+                }
+            }
+        }
+    }
+
+    private fun resolveActiveAppPackage(): String? {
+        val currentWindows = windows ?: return null
+
+        // 1. Look for the active or focused window that is specifically an APPLICATION
+        val targetWindow = currentWindows.firstOrNull { window ->
+            window.type == AccessibilityWindowInfo.TYPE_APPLICATION &&
+                    (window.isActive || window.isFocused)
+        } ?: currentWindows
+            // 2. Fallback: if a system window temporarily holds focus (e.g., notification shade),
+            // find the highest-layer visible application window underneath it
+            .filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
+            .maxByOrNull { it.layer }
+
+        val rootNode = targetWindow?.root ?: return null
+        val packageName = rootNode.packageName?.toString()
+
+        return packageName
+    }
+
+    private fun shouldCheckActiveWindow(event: AccessibilityEvent): Boolean {
+        return when (event.eventType) {
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> true
+            AccessibilityEvent.TYPE_WINDOWS_CHANGED -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    val changes = event.windowChanges
+                    (changes and AccessibilityEvent.WINDOWS_CHANGE_ACTIVE) != 0 ||
+                            (changes and AccessibilityEvent.WINDOWS_CHANGE_FOCUSED) != 0
+                } else {
+                    true
+                }
+            }
+            else -> false
         }
     }
 
@@ -273,11 +321,17 @@ class AdSkipperService : AccessibilityService() {
         super.onDestroy()
 
         unregisterReceiver(screenStateReceiver)
-        serviceJob.cancelChildren()
+
+        voiceEngineStarterJob?.cancel()
+        voiceEngineStarterJob = null
+
+        stopVoiceInteractionEngine()
     }
 
     public override fun onServiceConnected() {
         super.onServiceConnected()
+
+        audioDucker = AudioDucker(this)
 
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
@@ -364,58 +418,37 @@ class AdSkipperService : AccessibilityService() {
 
 
     private fun stopVoiceInteractionEngine() {
-        Log.d(TAG, "Entered stopVoiceInteractionEngine")
         if (isVoiceEngineStarted) {
             isVoiceEngineStarted = false
             VoiceCommandManager.stopEngine()
+            audioDucker?.stopDucking()
+            Log.d(TAG, "Stopped voice engine")
         }
     }
 
-    private suspend fun prepareVoiceInteractionEngine() {
-        Log.d(TAG, "Entered prepareVoiceInteractionEngine")
-        if (isVoiceEngineStarted)
-            return
+    private fun startVoiceInteractionEngine() {
+        if (voiceEngineStarterJob?.isActive == true || isVoiceEngineStarted)  return
 
-        val success = withContext(Dispatchers.IO) {
-            val isVoiceCommandEnabled = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                .getBoolean(getString(R.string.pref_key_pro_enable_voice), false)
+        val isVoiceCommandEnabled = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .getBoolean(getString(R.string.pref_key_pro_enable_voice), false)
 
-            if (!isVoiceCommandEnabled) return@withContext true
+        if (!isVoiceCommandEnabled) return
 
-            if (!(packageClickRules.get()?.contains(currentPackageName)?:false)) {
-                return@withContext true
-            }
-
-            var success = false
-            val voiceModel = VoiceModelManager.getOrFetchModel(this@AdSkipperService)
-            if (voiceModel != null) {
-                try {
-                    VoiceCommandManager.startEngine(voiceModel) { when(it) {
+        voiceEngineStarterJob = CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val voiceModel = VoiceModelManager.getOrFetchModel(this@AdSkipperService)
+                if (voiceModel != null) {
+                    VoiceCommandManager.startEngine(voiceModel, audioDucker) { when(it) {
                         VoiceCommand.SWIPE_UP -> performSwipe(true)
                         VoiceCommand.SWIPE_DOWN -> performSwipe(false)
                     } }
                     isVoiceEngineStarted = true
-                    success = true
-                } catch (_ : SecurityException) {
-                    // do nothing
+                    Log.d(TAG, "started voice engine")
                 }
-            }
-
-            if (!success) {
-                val prefs = PreferenceManager.getDefaultSharedPreferences(this@AdSkipperService)
-                prefs.edit(commit = true) {
-                    putBoolean(
-                        getString(R.string.pref_key_pro_enable_voice),
-                        false
-                    )
+            } catch (_ : SecurityException) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AdSkipperService, R.string.error_init_voice, Toast.LENGTH_SHORT).show()
                 }
-            }
-            return@withContext success
-        }
-
-        if (!success) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@AdSkipperService, R.string.error_init_voice, Toast.LENGTH_SHORT).show()
             }
         }
     }

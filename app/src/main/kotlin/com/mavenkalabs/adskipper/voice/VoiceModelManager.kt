@@ -1,8 +1,11 @@
-package com.mavenkalabs.adskipper.util
+package com.mavenkalabs.adskipper.voice
 
 import android.content.Context
 import androidx.core.net.toUri
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.vosk.Model
 import java.io.File
@@ -17,11 +20,16 @@ enum class Language {
     ES_ES,
 }
 
-object VoiceModelManager {
+object VoiceModelManager{
+    private val mutex = Mutex()
+
     private val MODEL_URLS = mapOf(
         Language.EN_US to "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
         Language.ES_ES to "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip"
     )
+
+    private val modelCache = mutableMapOf<Language, Model>()
+
     /**
      * Checks if the model folder exists locally, or downloads and unzips it.
      * Returns an initialized voice model instance ready for your Voice Controller.
@@ -29,28 +37,41 @@ object VoiceModelManager {
     suspend fun getOrFetchModel(
         context: Context,
         language: Language = Language.EN_US,
-        onProgress: (Int) -> Unit = {}
-    ): Model? = withContext(Dispatchers.IO) {
-        val modelUrl = MODEL_URLS[language]
-        val modelDirName = modelUrl?.toUri()?.lastPathSegment?.let { File(it).nameWithoutExtension }
-        if (modelDirName == null) {
-            return@withContext null
-        }
+        onProgress: (Int) -> Unit = {},
+        ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    ): Model? = withContext(ioDispatcher) {
+        mutex.withLock {
+            if (modelCache.contains(language)) {
+                return@withContext modelCache[language]
+            }
 
-        val targetDirectory = File(context.filesDir, modelDirName)
+            val modelUrl = MODEL_URLS[language]
+            val modelDirName =
+                modelUrl?.toUri()?.lastPathSegment?.let { File(it).nameWithoutExtension }
+            if (modelDirName == null) {
+                return@withContext null
+            }
 
-        if (isModelValid(targetDirectory)) {
-            return@withContext Model(targetDirectory.absolutePath)
-        }
+            val targetDirectory = File(context.filesDir, modelDirName)
 
-        targetDirectory.deleteRecursively()
+            if (isModelValid(targetDirectory)) {
+                val model = Model(targetDirectory.absolutePath)
+                modelCache[language] = model
+                return@withContext model
+            }
 
-        val success = downloadAndExtract(context.filesDir, modelUrl, onProgress)
+            targetDirectory.deleteRecursively()
 
-        if (success && isModelValid(targetDirectory)) {
-            Model(targetDirectory.absolutePath)
-        } else {
-            null
+            val success = downloadAndExtract(context.filesDir, modelUrl, onProgress)
+
+            if (success && isModelValid(targetDirectory)) {
+                val model = Model(targetDirectory.absolutePath)
+                modelCache[language] = model
+
+                model
+            } else {
+                null
+            }
         }
     }
 

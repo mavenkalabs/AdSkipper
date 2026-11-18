@@ -67,10 +67,12 @@ dependencies {
     implementation("androidx.preference:preference:1.2.1")
     implementation("androidx.fragment:fragment:1.9.1")
     implementation("androidx.core:core-ktx:1.19.1")
-    implementation("com.revenuecat.purchases:purchases:11.2.0")
+    implementation("com.revenuecat.purchases:purchases:11.3.0")
     implementation("com.alphacephei:vosk-android:0.3.75")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20260814")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+
     // Core library
     androidTestImplementation("androidx.test:core:1.7.0")
 
