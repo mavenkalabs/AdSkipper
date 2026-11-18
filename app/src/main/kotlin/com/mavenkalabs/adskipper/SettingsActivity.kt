@@ -1,7 +1,11 @@
 package com.mavenkalabs.adskipper
 
 import android.Manifest
+import android.app.StatusBarManager
+import android.content.ComponentName
+import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
@@ -15,6 +19,7 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
 import com.mavenkalabs.adskipper.util.AppLog
 import com.mavenkalabs.adskipper.util.ProUtils
+import com.mavenkalabs.adskipper.voice.VoiceTileService
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,12 +44,29 @@ class SettingsActivity : AppCompatActivity() {
             val voiceCommandSwitch = findPreference<SwitchPreferenceCompat>(getString(R.string.pref_key_pro_enable_voice))
             if (isGranted) {
                 voiceCommandSwitch?.isChecked = true
+                promptUserToAddTile(requireContext())
             } else {
                 voiceCommandSwitch?.isChecked = false
                 Toast.makeText(requireContext(), R.string.error_voice_permission, Toast.LENGTH_SHORT).show()
             }
         }
 
+        fun promptUserToAddTile(context: Context) {
+            // Only available on Android 13 (API 33) and above
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Fallback: Show instructions on how to add the tile manually
+                return
+            }
+
+            val statusBarManager = context.getSystemService(StatusBarManager::class.java) ?: return
+
+            statusBarManager.requestAddTileService(
+                ComponentName(context, VoiceTileService::class.java),
+                getString(R.string.label_voice_cmd_tile), // Label shown in the prompt
+                Icon.createWithResource(context, R.drawable.ic_voice_cmd_tile), // Icon shown in the prompt
+                context.mainExecutor
+            ) {}
+        }
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
 
