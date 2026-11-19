@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
-import com.mavenkalabs.adskipper.service.AdSkipperService
 import com.mavenkalabs.adskipper.util.AppLog
 
 class SettingsActivity : AppCompatActivity() {
@@ -32,19 +31,23 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.preferences, rootKey)
 
             // not available for old devices since the log capture needs permission request etc
+            handleLogCapturePrefs()
+        }
+
+        private fun handleLogCapturePrefs() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                var preference = findPreference<Preference?>(AdSkipperService.CAPTURE_LOGS_PREF)
+                var preference = findPreference<Preference?>(getString(R.string.pref_key_enable_logging))
                 if (preference != null) {
                     preferenceScreen.removePreference(preference)
                 }
-                preference = findPreference(AdSkipperService.DUMP_LOGS_PREF)
+                preference = findPreference(getString(R.string.pref_key_dump_logs))
                 if (preference != null) {
                     preferenceScreen.removePreference(preference)
                 }
             } else {
                 val captureLogsPref =
-                    findPreference<SwitchPreferenceCompat>(AdSkipperService.CAPTURE_LOGS_PREF)
-                val saveLogsPref = findPreference<Preference>(AdSkipperService.DUMP_LOGS_PREF)
+                    findPreference<SwitchPreferenceCompat>(getString(R.string.pref_key_enable_logging))
+                val saveLogsPref = findPreference<Preference>(getString(R.string.pref_key_dump_logs))
 
                 saveLogsPref?.isVisible = (captureLogsPref?.isChecked == true)
 
@@ -61,7 +64,8 @@ class SettingsActivity : AppCompatActivity() {
                 saveLogsPref?.onPreferenceClickListener =
                     Preference.OnPreferenceClickListener { _ ->
                         AppLog.dump(context)
-                        Toast.makeText(context, R.string.dump_logs_success_msg, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, R.string.msg_dump_logs_success, Toast.LENGTH_SHORT)
+                            .show()
                         true
                     }
             }
