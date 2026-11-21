@@ -17,7 +17,6 @@ import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import com.mavenkalabs.adskipper.MainActivity
 import com.mavenkalabs.adskipper.R
 import com.mavenkalabs.adskipper.engage.StatsSummaryWorker
@@ -26,6 +25,7 @@ import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
+import com.mavenkalabs.adskipper.util.ServiceFactory
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
@@ -174,7 +174,7 @@ class AdSkipperService : AccessibilityService() {
     override fun onUnbind(intent: Intent?): Boolean {
         toggleMute(false)
 
-        WorkManager.getInstance(this).cancelUniqueWork(SUMMARY_WORK_NAME)
+        ServiceFactory.getWorkManager(this).cancelUniqueWork(SUMMARY_WORK_NAME)
         usageDataManager = null
 
         return true
@@ -286,7 +286,7 @@ class AdSkipperService : AccessibilityService() {
             .setInitialDelay(SUMMARY_NOTIF_INTERVAL, TimeUnit.DAYS)
             .build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+        ServiceFactory.getWorkManager(this).enqueueUniquePeriodicWork(
             SUMMARY_WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
             workRequest

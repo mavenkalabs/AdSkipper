@@ -9,7 +9,9 @@ import android.media.AudioManager
 import android.os.Handler
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.work.WorkManager
 import com.mavenkalabs.adskipper.R
+import com.mavenkalabs.adskipper.util.ServiceFactory
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -52,6 +54,9 @@ internal class AdSkipperServiceTest {
 
     @Mock
     private lateinit var sharedPreferencesMock: SharedPreferences
+
+    @Mock
+    private lateinit var workManagerMock: WorkManager
 
     @Spy
     private lateinit var service: AdSkipperService
@@ -97,6 +102,7 @@ internal class AdSkipperServiceTest {
             )
         ).thenReturn(mutableListOf())
 
+        ServiceFactory.setWorkManager(workManagerMock)
         service.onServiceConnected()
     }
 
