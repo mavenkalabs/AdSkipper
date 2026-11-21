@@ -58,6 +58,7 @@ kotlin {
 dependencies {
 
     implementation("androidx.appcompat:appcompat:1.8.0")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
     implementation("com.google.android.material:material:1.14.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.2")
     implementation("androidx.navigation:navigation-fragment:2.10.2")

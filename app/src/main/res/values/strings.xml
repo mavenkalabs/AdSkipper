@@ -6,8 +6,8 @@
     <string name="pref_key_mute_ads" translatable="false">mute_ads</string>
     <string name="pref_key_enable_logging" translatable="false">enable_logging</string>
     <string name="pref_key_dump_logs" translatable="false">dump_logs</string>
-    <string name="pref_key_pro_settings" translatable="false">pro_settings</string>
-    <string name="pref_key_pro_enable_voice" translatable="false">voice_enabled</string>
+    <string name="pref_key_usage_data" translatable="false">usage_data</string>
+    <string name="pref_key_settings_nav_ts" translatable="false">settings_nav_ts</string>
 
     <!-- Strings used commonly -->
     <string name="go_to_a11y_settings">Accessibility Settings</string>
@@ -22,16 +22,11 @@
     <string name="label_dump_logs_desc">Saves debug logs to Downloads</string>
     <string name="msg_dump_logs_success">Logs saved to Downloads</string>
     <string name="title_category_general">General</string>
-    <string name="title_category_pro">Pro</string>
-    <string name="label_voice">Voice Commands</string>
-    <string name="label_voice_desc">Will need audio recording permission</string>
-    <string name="error_init_voice">Error in enabling voice commands</string>
-    <string name="error_voice_permission">Audio recording permission is required for voice commands</string>
 
     <!-- Strings used in main activity -->
     <string name="label_a11y_service_disabled">Ad Skipper is an app that automates clicking the Skip Ads button that appears in certain video apps.\n\nIt uses Accessibility features to scan window content, detect the Skip Ads button and then click on the Skip Ads button on your behalf.\n\nAd Skipper does not use or share any of your personal information or data.\n \nClick on Agree to continue and enable the service in Accessibility Settings.</string>
     <string name="label_a11y_service_enabled1">Ad Skipper is now ready for use.</string>
-    <string name="label_a11y_service_enabled2">You can close this. App will run in the background..\nGo to Settings > Accessibility to disable.</string>
+    <string name="label_a11y_service_enabled2">You can close this. App will run in the background..\nGo to Settings > Accessibility to disable or update settings.</string>
     <string name="label_agree">Agree</string>
     <string name="label_disagree">Disagree</string>
     <string name="label_tutorial">View short video on how to do this</string>
@@ -39,9 +34,19 @@
     <string name="label_premium_subscription_prompt1">Like the app? Support us!</string>
     <string name="label_premium_subscription_prompt2">Your support helps us make it better</string>
     <string name="label_premium_buy_subscription">Buy coffee</string>
-    <string name="label_premium_review">Rate app</string>
+    <string name="label_premium_review">Rate us</string>
+    <string name="label_premium_share">Share</string>
 
-    <!-- Strings used in tile service -->
-    <string name="label_voice_cmd_tile">Voice Commands</string>
+    <!-- engagement related -->
+    <string name="label_engagement_name">Ads skipped or muted</string>
+    <string name="label_engagement_desc">Shows count of ads skipped or muted</string>
+    <string name="label_engagement_notif_title">Ad Skipper stats available</string>
+    <string name="label_engagement_notif_desc">Tap to view your Ad Skipper stats for this week</string>
+    <string name="msg_engagement_text"><b>%1$d</b> ads skipped, <b>%2$d</b> muted</string>
+    <string name="label_stats_current_prefix">This week : </string>
+    <string name="label_stats_past_prefix">Past week : </string>
+    <string name="label_stats_lifetime_prefix">Lifetime : </string>
+    <string name="msg_notifications_rationale">For weekly stats and verification of app health</string>
+    <string name="label_request_notifications">Enable notifications</string>
 
 </resources>

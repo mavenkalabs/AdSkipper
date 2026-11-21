@@ -6,8 +6,10 @@ import android.provider.Settings
 import android.provider.Settings.SettingNotFoundException
 import android.view.View
 import android.widget.Button
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.NavHostFragment
+import androidx.preference.PreferenceManager
 import com.mavenkalabs.adskipper.service.AdSkipperService
 import java.util.Arrays
 
@@ -30,6 +32,10 @@ class ServiceDisabledFragment : Fragment(R.layout.fragment_service_disabled) {
         val buttonTutorial = view.findViewById<Button>(R.id.button_tutorial)
 
         buttonAgree?.setOnClickListener { _: View? ->
+            PreferenceManager.getDefaultSharedPreferences(requireContext()).edit {
+                putLong(getString(R.string.pref_key_settings_nav_ts), System.currentTimeMillis())
+            }
+
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }
