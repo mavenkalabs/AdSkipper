@@ -85,6 +85,22 @@ dependencies {
 
     // uiautomator
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.1")
+
     testImplementation(kotlin("test"))
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.4.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+
+}
+
+val mockitoAgent = configurations.create("mockitoAgent")
+
+dependencies {
+    testImplementation("org.mockito:mockito-core:5.24.0")
+    mockitoAgent("org.mockito:mockito-core:5.14.2") { isTransitive = false }
+}
+
+tasks.withType<Test>().configureEach {
+    jvmArgumentProviders.add(CommandLineArgumentProvider {
+        listOf("-javaagent:${mockitoAgent.asPath}")
+    })
 }
