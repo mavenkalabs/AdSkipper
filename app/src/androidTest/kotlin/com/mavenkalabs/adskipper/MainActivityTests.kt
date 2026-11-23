@@ -294,7 +294,12 @@ internal class MainActivityTests {
 
         PreferenceManager.getDefaultSharedPreferences(context).edit(commit = true) {
             putString(context.getString(R.string.pref_key_usage_data),
-                "adCountLifeTime=6, skipCountLifeTime=6, adCountLive=2, skipCountLive=2, adCountS1=4, skipCountS1=4")
+                "${UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIFE_TIME}=6, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME}=6, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIVE}=2, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE}=2, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_AD_COUNT_S1}=4, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1}=4")
         }
 
         UsageDataManager.init(context)
