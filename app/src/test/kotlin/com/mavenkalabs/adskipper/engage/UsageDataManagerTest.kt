@@ -10,7 +10,10 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -114,6 +117,11 @@ internal class UsageDataManagerTest {
         )
 
         UsageDataManager.takeSnapshot()
+
+
+        val usageDataStringCaptor = argumentCaptor<String>()
+        verify(mockSharedPreferencesEditor, times(3))
+            .putString(eq(USAGE_DATA_PREF_NAME), usageDataStringCaptor.capture(),)
 
         assertEquals(
             0,
