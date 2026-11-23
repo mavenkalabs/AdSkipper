@@ -53,6 +53,20 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
             val navController = NavHostFragment.findNavController(this)
             navController.popBackStack()
             navController.navigate(R.id.ServiceDisabledFragment)
+        } else {
+            val isStatUseful = (UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME)?:0) > 0
+            if (isStatUseful) {
+                childFragmentManager.beginTransaction()
+                    .setReorderingAllowed(true)
+                    .replace(R.id.stats_fragment_container, StatsFragment())
+                    .commit()
+                statsChildFragment.visibility = View.VISIBLE
+            } else {
+                childFragmentManager.findFragmentById(R.id.stats_fragment_container)?.let {
+                    childFragmentManager.beginTransaction().remove(it).commit()
+                }
+                statsChildFragment.visibility = View.GONE
+            }
         }
     }
 
