@@ -10,13 +10,10 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.MockitoAnnotations
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.assertFailsWith
 
 internal class UsageDataManagerTest {
     companion object {
@@ -36,6 +33,8 @@ internal class UsageDataManagerTest {
     fun setUp()  {
         mocksCloseable = MockitoAnnotations.openMocks(this)
 
+        Mockito.doReturn(mockContext)
+            .whenever(mockContext).applicationContext
         Mockito.doReturn(UsageDataManager::class.java.packageName)
             .whenever(mockContext).packageName
         Mockito.doReturn(USAGE_DATA_PREF_NAME)
@@ -44,16 +43,32 @@ internal class UsageDataManagerTest {
             .getSharedPreferences(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt())
         Mockito.doReturn(mockSharedPreferencesEditor).whenever(mockSharedPreferences)
             .edit()
+
+        UsageDataManager.init(mockContext)
     }
 
     @After
     fun tearDown() {
+        UsageDataManager.reset()
+
         mocksCloseable.close()
     }
 
     @Test
+    fun verifyFailureWithNoInit() {
+        UsageDataManager.reset()
+
+        assertFailsWith<IllegalStateException>() {
+            UsageDataManager.logAd()
+        }
+    }
+
+    @Test
     fun verifyWithNoExistingUsageData() {
-        assertNotNull(UsageDataManager(mockContext))
+        assertEquals(
+            0,
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
+        )
     }
 
     @Test
@@ -61,102 +76,65 @@ internal class UsageDataManagerTest {
         Mockito.doReturn("").whenever(mockSharedPreferences)
             .getString(eq(USAGE_DATA_PREF_NAME), ArgumentMatchers.isNull<String>())
 
-        val usageDataManager = UsageDataManager(mockContext)
-
-        assertNotNull(usageDataManager)
         assertEquals(
             0,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
         )
     }
 
 
     @Test
     fun verifySaveAndGetUsageData() {
-        val usageDataManager = UsageDataManager(mockContext)
-        usageDataManager.logSkip(mockContext)
-        usageDataManager.logAd(mockContext)
+        UsageDataManager.logSkip()
+        UsageDataManager.logAd()
 
         assertEquals(
             1,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
         )
         assertEquals(
             1,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIVE)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIVE)
         )
         assertEquals(
             0,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)
         )
         assertEquals(
             0,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)
-        )
-        assertEquals(
-            0,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME)
-        )
-        assertEquals(
-            0,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIFE_TIME)
-        )
-
-        usageDataManager.takeSnapshot(mockContext)
-
-        assertEquals(
-            0,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
-        )
-        assertEquals(
-            0,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIVE)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)
         )
         assertEquals(
             1,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)
-        )
-        assertEquals(1, usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_S1))
-        assertEquals(
-            1,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME)
         )
         assertEquals(
             1,
-            usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIFE_TIME)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIFE_TIME)
         )
 
-        val usageDataStringCaptor = argumentCaptor<String>()
-        verify(mockSharedPreferencesEditor, times(3)).putString(eq(USAGE_DATA_PREF_NAME), usageDataStringCaptor.capture(),)
-
-        Mockito.doReturn(usageDataStringCaptor.lastValue).whenever(mockSharedPreferences)
-            .getString(eq(USAGE_DATA_PREF_NAME), ArgumentMatchers.isNull<String>())
-
-        val usageDataManagerReloaded = UsageDataManager(mockContext)
+        UsageDataManager.takeSnapshot()
 
         assertEquals(
             0,
-            usageDataManagerReloaded.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE)
         )
         assertEquals(
             0,
-            usageDataManagerReloaded.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIVE)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIVE)
         )
         assertEquals(
             1,
-            usageDataManagerReloaded.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)
+        )
+        assertEquals(1, UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_S1))
+        assertEquals(
+            1,
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME)
         )
         assertEquals(
             1,
-            usageDataManagerReloaded.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_S1)
-        )
-        assertEquals(
-            1,
-            usageDataManagerReloaded.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME)
-        )
-        assertEquals(
-            1,
-            usageDataManagerReloaded.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIFE_TIME)
+            UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIFE_TIME)
         )
     }
 }

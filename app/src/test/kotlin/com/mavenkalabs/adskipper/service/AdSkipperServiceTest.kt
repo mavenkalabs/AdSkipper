@@ -11,6 +11,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.work.WorkManager
 import com.mavenkalabs.adskipper.R
+import com.mavenkalabs.adskipper.engage.UsageDataManager
 import com.mavenkalabs.adskipper.util.ServiceFactory
 import org.junit.After
 import org.junit.Assert
@@ -54,9 +55,12 @@ internal class AdSkipperServiceTest {
 
     @Mock
     private lateinit var sharedPreferencesMock: SharedPreferences
-
+    @Mock
+    private lateinit var sharedPreferencesEditorMock: SharedPreferences.Editor
     @Mock
     private lateinit var workManagerMock: WorkManager
+    @Mock
+    private lateinit var contextMock: Context
 
     @Spy
     private lateinit var service: AdSkipperService
@@ -75,12 +79,14 @@ internal class AdSkipperServiceTest {
         doReturn(false).whenever(audioManagerMock)
             .isStreamMute(ArgumentMatchers.eq(AudioManager.STREAM_MUSIC))
 
-        val contextMock = Mockito.mock(Context::class.java)
         doReturn(contextMock).whenever(service).applicationContext
         doReturn(AdSkipperService::class.java.packageName)
             .whenever(contextMock).packageName
         doReturn(sharedPreferencesMock).whenever(contextMock)
             .getSharedPreferences(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt())
+        Mockito.doReturn(sharedPreferencesEditorMock).whenever(sharedPreferencesMock)
+            .edit()
+
         whenever(
             sharedPreferencesMock.getBoolean(
                 ArgumentMatchers.anyString(),
@@ -92,7 +98,6 @@ internal class AdSkipperServiceTest {
         doReturn(nodeInfoMock).whenever(service).rootInActiveWindow
         whenever(eventMock.packageName).thenReturn(YT_PKG_NAME)
         whenever(nodeInfoMock.isClickable).thenReturn(false)
-        whenever(nodeInfoMock.isVisibleToUser).thenReturn(false)
         whenever(nodeInfoMock.isEnabled).thenReturn(false)
         doReturn(false).whenever(audioManagerMock)
             .isStreamMute(ArgumentMatchers.eq(AudioManager.STREAM_MUSIC))
@@ -101,6 +106,8 @@ internal class AdSkipperServiceTest {
                 ArgumentMatchers.anyString()
             )
         ).thenReturn(mutableListOf())
+        doReturn(contextMock)
+            .whenever(contextMock).applicationContext
 
         ServiceFactory.setWorkManager(workManagerMock)
         service.onServiceConnected()
@@ -144,7 +151,6 @@ internal class AdSkipperServiceTest {
         )
             .thenReturn(listOf(nodeInfoMock))
         whenever(nodeInfoMock.isClickable).thenReturn(true)
-        whenever(nodeInfoMock.isVisibleToUser).thenReturn(true)
         whenever(nodeInfoMock.isEnabled).thenReturn(true)
 
         service.onAccessibilityEvent(eventMock)

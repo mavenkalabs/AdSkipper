@@ -34,14 +34,11 @@ class StatsSummaryWorker(
             return Result.success()
         }
 
-        val usageDataManager = UsageDataManager(applicationContext)
-        usageDataManager.takeSnapshot(applicationContext)
-        val isStatUseful = (usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_AD_COUNT_S1)?:0) > 0
-        if (isStatUseful) {
-            createSummaryChannel(applicationContext)
-            showSummaryNotification(applicationContext)
-        }
-        
+        UsageDataManager.init(applicationContext)
+        UsageDataManager.takeSnapshot()
+        createSummaryChannel(applicationContext)
+        showSummaryNotification(applicationContext)
+
         return Result.success()
     }
 

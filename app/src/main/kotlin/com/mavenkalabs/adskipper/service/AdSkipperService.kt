@@ -52,8 +52,6 @@ class AdSkipperService : AccessibilityService() {
 
     private val packageMuteRules = AtomicReference<MutableMap<String, BaseRule>?>()
 
-    private var usageDataManager: UsageDataManager? = null
-
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         try {
             if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
@@ -81,7 +79,7 @@ class AdSkipperService : AccessibilityService() {
                         adInProgress = true
                         AppLog.d(TAG, "onAccessibilityEvent: Detected ad")
                         AppLog.logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
-                        usageDataManager?.logAd(applicationContext)
+                        UsageDataManager.logAd()
                     }
                 }
 
@@ -109,6 +107,11 @@ class AdSkipperService : AccessibilityService() {
                                 clickableNode = clickableNode.parent
                             }
                             if (clickableNode != null) {
+                                // ignore repeated clicks
+                                if ((System.currentTimeMillis() - lastAppClickTS) > APP_CLICK_QUIET_INTERVAL) {
+                                    UsageDataManager.logSkip()
+                                }
+
                                 tap(clickableNode)
                                 AppLog.d(
                                     TAG,
@@ -119,11 +122,6 @@ class AdSkipperService : AccessibilityService() {
                                     rootInActiveWindow,
                                     AppLog.EventType.SKIP
                                 )
-
-                                // ignore repeated clicks
-                                if ((System.currentTimeMillis() - lastAppClickTS) > APP_CLICK_QUIET_INTERVAL) {
-                                    usageDataManager?.logSkip(applicationContext)
-                                }
                             }
                         })
                 }
@@ -175,7 +173,6 @@ class AdSkipperService : AccessibilityService() {
         toggleMute(false)
 
         ServiceFactory.getWorkManager(this).cancelUniqueWork(SUMMARY_WORK_NAME)
-        usageDataManager = null
 
         return true
     }
@@ -185,7 +182,7 @@ class AdSkipperService : AccessibilityService() {
     }
 
     public override fun onServiceConnected() {
-        usageDataManager = UsageDataManager(applicationContext)
+        UsageDataManager.init(applicationContext)
 
         scheduleWeeklySummary()
 

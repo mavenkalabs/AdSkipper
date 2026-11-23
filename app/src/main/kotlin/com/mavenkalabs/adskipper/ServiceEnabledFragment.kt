@@ -87,8 +87,7 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
             }
         }
 
-        val usageDataManager = UsageDataManager(requireContext())
-        val isStatUseful = (usageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1)?:0) > 0
+        val isStatUseful = (UsageDataManager.getStatAsInt(UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME)?:0) > 0
         if (isStatUseful) {
             childFragmentManager.beginTransaction()
                 .setReorderingAllowed(true)

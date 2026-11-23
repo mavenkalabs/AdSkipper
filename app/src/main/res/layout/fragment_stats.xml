@@ -16,12 +16,13 @@
         <TableRow
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="?attr/colorSurfaceContainer">
+            android:background="?attr/colorSurfaceContainerLowest">
 
             <TextView
                 android:id="@+id/stats_this_cycle_prefix"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
                 android:text="@string/label_stats_current_prefix"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
@@ -35,12 +36,14 @@
 
         <TableRow
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:background="?attr/colorSurfaceContainer">
 
             <TextView
                 android:id="@+id/stats_past_cycle_prefix"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
                 android:text="@string/label_stats_past_prefix"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
@@ -55,12 +58,13 @@
         <TableRow
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="?attr/colorSurfaceContainer">
+            android:background="?attr/colorSurfaceContainerHighest">
 
             <TextView
                 android:id="@+id/stats_lifetime_prefix"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
                 android:text="@string/label_stats_lifetime_prefix"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
 
