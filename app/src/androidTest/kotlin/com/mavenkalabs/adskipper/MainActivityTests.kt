@@ -5,6 +5,9 @@ import android.content.Intent
 import android.provider.Settings
 import android.widget.Switch
 import android.widget.VideoView
+import androidx.core.content.edit
+import androidx.core.text.HtmlCompat
+import androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -12,7 +15,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
-import com.mavenkalabs.adskipper.service.AdSkipperService
+import androidx.test.uiautomator.waitForAppToBeVisible
+import com.mavenkalabs.adskipper.engage.UsageDataManager
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertNull
@@ -29,6 +33,7 @@ internal class MainActivityTests {
     companion object {
         private const val TIMEOUT : Long = 2000
         private const val APP_NAME: String = "Ad Skipper"
+        private const val MUTE_ADS_PREF = "mute_ads"
     }
 
     @Before
@@ -60,14 +65,14 @@ internal class MainActivityTests {
         found = uiDevice.hasObject(
             By.text(
                 ApplicationProvider.getApplicationContext<Context>()
-                    .getString(R.string.a11y_service_disabled_message)
+                    .getString(R.string.label_a11y_service_disabled)
             )
         )
         assertTrue(found)
 
         found = uiDevice.findObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.disagree)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_disagree)
                     .uppercase(Locale.getDefault())
             )
         ).clickAndWait(Until.newWindow(), TIMEOUT)
@@ -106,14 +111,14 @@ internal class MainActivityTests {
         found = uiDevice.hasObject(
             By.text(
                 ApplicationProvider.getApplicationContext<Context>()
-                    .getString(R.string.a11y_service_disabled_message)
+                    .getString(R.string.label_a11y_service_disabled)
             )
         )
         assertTrue(found)
 
         found = uiDevice.findObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.agree)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_agree)
                     .uppercase(Locale.getDefault())
             )
         ).clickAndWait(Until.newWindow(), TIMEOUT)
@@ -127,7 +132,7 @@ internal class MainActivityTests {
             Until.hasObject(
                 By.text(
                     ApplicationProvider.getApplicationContext<Context>()
-                        .getString(R.string.a11y_service_enabled_message1)
+                        .getString(R.string.label_a11y_service_enabled1)
                 )
             ), 10000
         )
@@ -136,14 +141,14 @@ internal class MainActivityTests {
         val prefs =
             PreferenceManager.getDefaultSharedPreferences(
                 ApplicationProvider.getApplicationContext())
-        assertTrue(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false))
+        assertTrue(prefs.getBoolean(MUTE_ADS_PREF, false))
 
         launchA11ySettings()
         toggleMuteAdsSetting(false)
-        assertFalse(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, true))
+        assertFalse(prefs.getBoolean(MUTE_ADS_PREF, true))
 
         toggleMuteAdsSetting(true)
-        assertTrue(prefs.getBoolean(AdSkipperService.MUTE_ADS_PREF, false))
+        assertTrue(prefs.getBoolean(MUTE_ADS_PREF, false))
     }
 
     @Test
@@ -166,14 +171,14 @@ internal class MainActivityTests {
 
         found = uiDevice.hasObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.tutorial)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_tutorial)
             )
         )
         assertTrue(found)
 
         found = uiDevice.findObject(
             By.text(
-                ApplicationProvider.getApplicationContext<Context>().getString(R.string.tutorial)
+                ApplicationProvider.getApplicationContext<Context>().getString(R.string.label_tutorial)
             )
         ).clickAndWait(Until.newWindow(), TIMEOUT)
         assertTrue(found)
@@ -210,7 +215,7 @@ internal class MainActivityTests {
         found = uiDevice.hasObject(
             By.text(
                 ApplicationProvider.getApplicationContext<Context>()
-                    .getString(R.string.a11y_service_enabled_message1)
+                    .getString(R.string.label_a11y_service_enabled1)
             )
         )
         assertTrue(found)
@@ -231,17 +236,114 @@ internal class MainActivityTests {
             Until.hasObject(
                 By.text(
                     ApplicationProvider.getApplicationContext<Context>()
-                        .getString(R.string.a11y_service_disabled_message)
+                        .getString(R.string.label_a11y_service_disabled)
                 )
             ), 10000
         )
         assertTrue(found)
     }
 
+    @Test
+    fun verifyUiWithRequestNotifications() {
+        launchA11ySettings()
+
+        toggleA11ySetting(true)
+
+        val activityIntent =
+            Intent(ApplicationProvider.getApplicationContext(), MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("EXTRA_REQUEST_NOTIFICATIONS", true)
+            }
+
+        ApplicationProvider.getApplicationContext<Context>().startActivity(activityIntent)
+
+        // wait for app to become visible
+        var found = uiDevice.waitForAppToBeVisible(
+            InstrumentationRegistry.getInstrumentation().targetContext.packageName, TIMEOUT)
+        assertTrue(found)
+
+        // verify enable notifications button exists
+        val requestNotificationsBn = uiDevice.findObject(
+            By.text(
+                ApplicationProvider.getApplicationContext<Context>()
+                    .getString(R.string.label_request_notifications)
+            )
+        )
+        assertNotNull(requestNotificationsBn)
+
+        // tap enable notifications and then allow notifications
+        requestNotificationsBn.clickAndWait(Until.newWindow(), TIMEOUT)
+
+        found = uiDevice.findObject(By.text("Allow"))
+            .clickAndWait(Until.newWindow(), TIMEOUT)
+        assertTrue(found)
+
+        assertFalse(uiDevice.hasObject(By.text(
+            ApplicationProvider.getApplicationContext<Context>()
+                .getString(R.string.label_request_notifications)
+        )))
+    }
+
+    @Test
+    fun verifyUiWithStats() {
+        launchA11ySettings()
+
+        toggleA11ySetting(true)
+
+        val context : Context = ApplicationProvider.getApplicationContext()
+
+        PreferenceManager.getDefaultSharedPreferences(context).edit(commit = true) {
+            putString(context.getString(R.string.pref_key_usage_data),
+                "${UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIFE_TIME}=6, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIFE_TIME}=6, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_AD_COUNT_LIVE}=2, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_LIVE}=2, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_AD_COUNT_S1}=4, " +
+                    "${UsageDataManager.USAGE_DATA_KEY_SKIP_COUNT_S1}=4")
+        }
+
+        UsageDataManager.init(context)
+
+        val activityIntent =
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+
+        context.startActivity(activityIntent)
+
+        // wait for app to become visible
+        val found = uiDevice.waitForAppToBeVisible(
+            context.packageName, TIMEOUT)
+        assertTrue(found)
+
+        // verify stats text exists
+        assertTrue(uiDevice.hasObject(By.text(
+            context.getString(R.string.label_stats_current_prefix)
+        )))
+        assertTrue(uiDevice.hasObject(By.text(
+            context.getString(R.string.label_stats_past_prefix)
+        )))
+        assertTrue(uiDevice.hasObject(By.text(
+            context.getString(R.string.label_stats_lifetime_prefix)
+        )))
+        assertTrue(uiDevice.hasObject(By.text(
+            HtmlCompat.fromHtml(context.getString(R.string.msg_engagement_text, 6, 6),
+                FROM_HTML_MODE_LEGACY).toString()
+        )))
+        assertTrue(uiDevice.hasObject(By.text(
+            HtmlCompat.fromHtml(context.getString(R.string.msg_engagement_text, 4, 4),
+                FROM_HTML_MODE_LEGACY).toString()
+        )))
+        assertTrue(uiDevice.hasObject(By.text(
+            HtmlCompat.fromHtml(context.getString(R.string.msg_engagement_text, 2, 2),
+                FROM_HTML_MODE_LEGACY).toString()
+        )))
+    }
+
     private fun launchA11ySettings() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        InstrumentationRegistry.getInstrumentation().context.startActivity(intent)
+        InstrumentationRegistry.getInstrumentation().targetContext.startActivity(intent)
 
         uiDevice.waitForWindowUpdate(null, TIMEOUT)
     }
@@ -270,7 +372,7 @@ internal class MainActivityTests {
             Until.hasObject(
                 By.text(
                     ApplicationProvider.getApplicationContext<Context>()
-                        .getString(R.string.mute_ads)
+                        .getString(R.string.label_mute_ads)
                 )
             ), TIMEOUT
         )

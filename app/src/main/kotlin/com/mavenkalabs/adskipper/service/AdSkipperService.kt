@@ -13,12 +13,20 @@ import android.media.AudioManager
 import android.view.ViewConfiguration
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import com.mavenkalabs.adskipper.MainActivity
+import com.mavenkalabs.adskipper.R
+import com.mavenkalabs.adskipper.engage.StatsSummaryWorker
+import com.mavenkalabs.adskipper.engage.UsageDataManager
 import com.mavenkalabs.adskipper.rules.BaseRule
 import com.mavenkalabs.adskipper.rules.RULE_PARAM_LAST_USER_CLICK_TS
 import com.mavenkalabs.adskipper.rules.RulesParser
 import com.mavenkalabs.adskipper.util.AppLog
-import com.mavenkalabs.adskipper.util.ConfigReader
+import com.mavenkalabs.adskipper.util.ServiceFactory
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
@@ -27,8 +35,6 @@ class AdSkipperService : AccessibilityService() {
     private var muteAds = false
 
     private var adInProgress = false
-
-    private val configReader: ConfigReader? = null
 
     /**
      * Last time a click happened
@@ -73,6 +79,7 @@ class AdSkipperService : AccessibilityService() {
                         adInProgress = true
                         AppLog.d(TAG, "onAccessibilityEvent: Detected ad")
                         AppLog.logAccessibilityEvent(rootInActiveWindow, AppLog.EventType.AD)
+                        UsageDataManager.logAd()
                     }
                 }
 
@@ -100,6 +107,11 @@ class AdSkipperService : AccessibilityService() {
                                 clickableNode = clickableNode.parent
                             }
                             if (clickableNode != null) {
+                                // ignore repeated clicks
+                                if ((System.currentTimeMillis() - lastAppClickTS) > APP_CLICK_QUIET_INTERVAL) {
+                                    UsageDataManager.logSkip()
+                                }
+
                                 tap(clickableNode)
                                 AppLog.d(
                                     TAG,
@@ -159,6 +171,9 @@ class AdSkipperService : AccessibilityService() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         toggleMute(false)
+
+        ServiceFactory.getWorkManager(this).cancelUniqueWork(SUMMARY_WORK_NAME)
+
         return true
     }
 
@@ -166,27 +181,19 @@ class AdSkipperService : AccessibilityService() {
         toggleMute(false)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-
-        if (configReader != null) {
-            try {
-                configReader.close()
-            } catch (e: Exception) {
-                AppLog.e(TAG, e.message!!, e)
-            }
-        }
-    }
-
     public override fun onServiceConnected() {
+        UsageDataManager.init(applicationContext)
+
+        scheduleWeeklySummary()
+
         val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        muteAds = prefs.getBoolean(MUTE_ADS_PREF, true)
-        if (prefs.getBoolean(CAPTURE_LOGS_PREF, false)) AppLog.enable() else AppLog.disable()
+        muteAds = prefs.getBoolean(getString(R.string.pref_key_mute_ads), true)
+        if (prefs.getBoolean(getString(R.string.pref_key_enable_logging), false)) AppLog.enable() else AppLog.disable()
 
         val listener: OnSharedPreferenceChangeListener?
         prefs.registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener { p: SharedPreferences?, key: String? ->
             AppLog.d(TAG, "onServiceConnected: pref changed {0}", key)
-            if (key == MUTE_ADS_PREF) {
+            if (key == getString(R.string.pref_key_mute_ads)) {
                 muteAds = p!!.getBoolean(key, false)
                 AppLog.d(TAG, "onServiceConnected: muteAds now {0}", muteAds)
             }
@@ -247,15 +254,51 @@ class AdSkipperService : AccessibilityService() {
                         }.toTypedArray())
             )
         )
+
+        // send back to main activity
+        val requestTime = prefs.getLong(getString(R.string.pref_key_settings_nav_ts), 0L)
+        val isRecentUserRequest = (System.currentTimeMillis() - requestTime) < APP_ENABLE_DELAY_INTERVAL
+
+        if (isRecentUserRequest) {
+            prefs.edit {
+                remove(getString(R.string.pref_key_settings_nav_ts))
+            }
+
+            val intent = Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("EXTRA_REQUEST_NOTIFICATIONS", true)
+            }
+
+            startActivity(intent)
+        }
+
+
+    }
+
+    private fun scheduleWeeklySummary() {
+        val workRequest = PeriodicWorkRequestBuilder<StatsSummaryWorker>(
+            repeatInterval = SUMMARY_NOTIF_INTERVAL,
+            repeatIntervalTimeUnit = TimeUnit.DAYS
+        )
+            .setInitialDelay(SUMMARY_NOTIF_INTERVAL, TimeUnit.DAYS)
+            .build()
+
+        ServiceFactory.getWorkManager(this).enqueueUniquePeriodicWork(
+            SUMMARY_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 
     companion object {
-        const val MUTE_ADS_PREF: String = "mute_ads"
-
-        const val CAPTURE_LOGS_PREF: String = "enable_logging"
-        const val DUMP_LOGS_PREF: String = "dump_logs"
 
         const val APP_CLICK_QUIET_INTERVAL: Int = 1000
+
+        const val APP_ENABLE_DELAY_INTERVAL: Long = 2*60*1000L
+
+        const val SUMMARY_NOTIF_INTERVAL = 7L // days
+
+        const val SUMMARY_WORK_NAME = "stats_summary_work"
 
         private val TAG: String = AdSkipperService::class.java.getName()
     }
