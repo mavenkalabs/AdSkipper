@@ -68,6 +68,8 @@ class ServiceEnabledFragment : Fragment(R.layout.fragment_service_enabled) {
                 statsChildFragment.visibility = View.GONE
             }
         }
+
+        checkAndShowPremium()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
